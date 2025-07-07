@@ -4,6 +4,7 @@ import './App.css';
 import Login from './Components/Login';
 import SignUp from './Components/SignUp';
 import Chat from './Components/Chat';
+import UpdateProfile from './Components/UpdateProfile';
 
 function App() {
   // Check if user is authenticated
@@ -27,6 +28,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/update-profile" 
+            element={
+              <ProtectedRoute>
+                <UpdateProfile />
               </ProtectedRoute>
             } 
           />

@@ -1,0 +1,91 @@
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.update-profile-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(120deg, #f0f0f0, #e0f7fa);
+  padding: 20px;
+}
+
+.update-profile-card {
+  background-color: #fff;
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+}
+
+.update-profile-card h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #333;
+}
+
+.update-profile-form label {
+  display: block;
+  margin-bottom: 15px;
+  color: #444;
+  font-weight: 500;
+}
+
+.update-profile-form input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.3s ease;
+}
+
+.update-profile-form input:focus {
+  border-color: #007acc;
+  outline: none;
+}
+
+.update-profile-form button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background-color: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.update-profile-form button:hover {
+  background-color: #005fa3;
+}
+
+.success-msg,
+.error-msg {
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.success-msg {
+  background-color: #e6ffed;
+  color: #2e7d32;
+  border: 1px solid #b2dfdb;
+}
+
+.error-msg {
+  background-color: #ffe6e6;
+  color: #c62828;
+  border: 1px solid #f44336;
+} 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../Services/api';
 import '../Style/chat.css';
+import UpdateProfile from './UpdateProfile';
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
@@ -99,6 +100,9 @@ const Chat = () => {
                 <div className="user-info">
                     <span>Welcome, {username}!</span>
                     <button onClick={handleLogout} className="logout-button">Logout</button>
+                    <button onClick={() => navigate('/update-profile')} className="update-profile-button">
+                        Update Profile
+                    </button>
                 </div>
             </div>
 
