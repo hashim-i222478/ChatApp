@@ -36,7 +36,7 @@ const UpdateProfile = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8080/api/users/update', {
+      const res = await fetch('http://localhost:5001/api/users/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -48,6 +48,11 @@ const UpdateProfile = () => {
       if (!res.ok) throw new Error(data.message || 'Update failed');
       setMessage('Profile updated successfully!');
       setForm({ ...form, password: '' });
+      // Update localStorage with new username and email
+      localStorage.setItem('username', form.username);
+      localStorage.setItem('email', form.email);
+      // Redirect to chat page after update
+      window.location.href = '/chat';
     } catch (err) {
       setError(err.message);
     } finally {

@@ -5,6 +5,7 @@ import Login from './Components/Login';
 import SignUp from './Components/SignUp';
 import Chat from './Components/Chat';
 import UpdateProfile from './Components/UpdateProfile';
+import { WebSocketProvider } from './Context/WebSocketContext';
 
 function App() {
   // Check if user is authenticated
@@ -17,32 +18,36 @@ function App() {
     return isAuthenticated() ? children : <Navigate to="/login" />;
   };
 
+  const username = localStorage.getItem('username');
+
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route 
-            path="/chat" 
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/update-profile" 
-            element={
-              <ProtectedRoute>
-                <UpdateProfile />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </div>
-    </Router>
+    <WebSocketProvider username={username}>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route 
+              path="/chat" 
+              element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/update-profile" 
+              element={
+                <ProtectedRoute>
+                  <UpdateProfile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </div>
+      </Router>
+    </WebSocketProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 const User = require('../Models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const wss = require('../wsServer');
 
 // Signup controller
 exports.signup = async (req, res) => {
@@ -66,40 +67,3 @@ exports.getuser = async (req, res) => {
   }
 };
 
-exports.UpdateUserProfile = async (req, res) => {
-  try {
-    const updates = {};
-    const allowedUpdates = ['username', 'email', 'password'];
-    allowedUpdates.forEach(field => {
-      if (req.body[field]) {
-        updates[field] = req.body[field];
-      }
-    });
-
-    // If password is being updated, hash it
-    if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $set: updates },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.status(200).json({
-      message: 'Profile updated successfully',
-      user: {
-        username: user.username,
-        email: user.email,
-        _id: user._id
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
