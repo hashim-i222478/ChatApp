@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../Style/updateProfile.css';
 import { authAPI } from '../Services/api';
+import Header from './header';
 import { useNavigate } from 'react-router-dom';
 
 const UpdateProfile = () => {
@@ -63,7 +64,11 @@ const UpdateProfile = () => {
   };
 
   return (
+    <>
+    <Header />
+    
     <div className="update-profile-wrapper">
+      
       <div className="update-profile-card">
         <h2>Update Profile</h2>
         {loading && <p>Loading...</p>}
@@ -104,6 +109,7 @@ const UpdateProfile = () => {
         </form>
       </div>
     </div>
+    </> 
   );
 };
 

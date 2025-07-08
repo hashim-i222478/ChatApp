@@ -1,0 +1,91 @@
+/* Online Users Styles */
+.online-users-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.online-users-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(44,62,80,0.10);
+  padding: 40px 32px 32px 32px;
+  min-width: 340px;
+  max-width: 95vw;
+  text-align: center;
+  animation: fadeIn 0.7s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.online-users-card h2 {
+  margin-bottom: 28px;
+  color: #232946;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.online-users-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.online-user-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f1f1;
+  font-size: 1.08rem;
+  color: #232946;
+  transition: background 0.2s;
+}
+
+.online-user-item:last-child {
+  border-bottom: none;
+}
+
+.online-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #22c55e;
+  margin-right: 2px;
+  box-shadow: 0 0 6px #22c55e55;
+}
+
+.online-username {
+  font-weight: 600;
+  color: #232946;
+}
+
+.online-email {
+  color: #6b7280;
+  font-size: 0.98rem;
+}
+
+.no-users {
+  color: #d7263d;
+  font-size: 1.08rem;
+  padding: 18px 0;
+}
+
+.online-users-loading {
+  color: #232946;
+  font-size: 1.1rem;
+  margin: 20px 0;
+}
+
+.online-users-error {
+  color: #d7263d;
+  font-size: 1.1rem;
+  margin: 20px 0;
+} 

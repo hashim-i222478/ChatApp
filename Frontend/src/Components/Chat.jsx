@@ -4,6 +4,7 @@ import { authAPI } from '../Services/api';
 import '../Style/chat.css';
 import UpdateProfile from './UpdateProfile';
 import { useWebSocket } from '../Context/WebSocketContext';
+import Header from './header';
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
@@ -164,48 +165,48 @@ const Chat = () => {
     }
 
     return (
-        <div className="chat-container">
-            <div className="chat-header">
-                <h1 className="chat-title">Chat App</h1>
-                <div className="user-info">
-                    <span>Welcome, {username}!</span>
-                    <button onClick={handleLogout} className="logout-button">Logout</button>
-                    <button onClick={() => navigate('/update-profile')} className="update-profile-button">
-                        Update Profile
-                    </button>
-                    <button onClick={handleShowHistory} className="history-button">
-                        {showHistory ? 'Hide Chat History' : 'Show Chat History'}
-                    </button>
+        <>
+            <Header />
+            <div className="chat-container">
+                <div className="chat-header">
+                    <h1 className="chat-title">Welcome, {username}!</h1>
+                    <div className="user-info">
+                        
+                        
+                        <button onClick={handleShowHistory} className="history-button">
+                            {showHistory ? 'Hide Chat History' : 'Show Chat History'}
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <div className="chat-box" id="messages" ref={chatBoxRef}>
-                {messages
-                    .slice(showHistory ? 0 : historyCount)
-                    .map((msg, index) => (
-                        <div
-                            key={index + (showHistory ? 0 : historyCount)}
-                            className={`chat-message ${msg.username && username && msg.username.trim().toLowerCase() === username.trim().toLowerCase() ? 'self' : 'other'}`}
-                        >
-                            {/* System messages (profile updates, joins, etc.) are shown as normal chat-messages */}
-                            <span className="username">{msg.username}</span>
-                            <span className="time">[{msg.time}]</span>:
-                            <span className="text"> {msg.message}</span>
-                        </div>
-                    ))}
-            </div>
+                <div className="chat-box" id="messages" ref={chatBoxRef}>
+                    {messages
+                        .slice(showHistory ? 0 : historyCount)
+                        .map((msg, index) => (
+                            <div
+                                key={index + (showHistory ? 0 : historyCount)}
+                                className={`chat-message ${msg.username && username && msg.username.trim().toLowerCase() === username.trim().toLowerCase() ? 'self' : 'other'}`}
+                            >
+                                {/* System messages (profile updates, joins, etc.) are shown as normal chat-messages */}
+                                <span className="username">{msg.username}</span>
+                                <span className="time">[{msg.time}]</span>:
+                                <span className="text"> {msg.message}</span>
+                            </div>
+                        ))}
+                </div>
 
-            <form className="chat-form" onSubmit={handleSubmit}>
-                <input
-                    className="chat-input"
-                    type="text"
-                    placeholder="Type a message..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                />
-                <button className="chat-button" type="submit">Send</button>
-            </form>
-        </div>
+                <form className="chat-form" onSubmit={handleSubmit}>
+                    <input
+                        className="chat-input"
+                        type="text"
+                        placeholder="Type a message..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                    />
+                    <button className="chat-button" type="submit">Send</button>
+                </form>
+            </div>
+        </>
     );
 };
 

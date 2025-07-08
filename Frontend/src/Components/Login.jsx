@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '../Services/api';
 import '../Style/auth.css';
 
@@ -11,14 +11,22 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      navigate('/chat');
+      navigate('/');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (!location.search.includes('reloaded=1')) {
+      navigate(`${location.pathname}?reloaded=1`, { replace: true });
+      window.location.reload();
+    }
+  }, [location, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -40,7 +48,7 @@ const Login = () => {
       localStorage.setItem('username', response.data.username);
       
       // Redirect to chat
-      navigate('/chat');
+      navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {

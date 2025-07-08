@@ -5,6 +5,9 @@ import Login from './Components/Login';
 import SignUp from './Components/SignUp';
 import Chat from './Components/Chat';
 import UpdateProfile from './Components/UpdateProfile';
+import ViewProfile from './Components/ViewProfile';
+import Home from './Components/Home';
+import OnlineUsers from './Components/OnlineUsers';
 import { WebSocketProvider } from './Context/WebSocketContext';
 
 function App() {
@@ -25,6 +28,7 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route 
@@ -43,7 +47,23 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="*" element={<Navigate to="/login" />} />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <ViewProfile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/online-users" 
+              element={
+                <ProtectedRoute>
+                  <OnlineUsers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
       </Router>
