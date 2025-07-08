@@ -44,6 +44,13 @@ const Chat = () => {
         
         fetchUserData();
     }, [navigate]);
+
+    // Always send identify message with current username when ws, isConnected, or username changes
+    useEffect(() => {
+        if (ws && isConnected && username) {
+            ws.send(JSON.stringify({ type: 'identify', username }));
+        }
+    }, [ws, isConnected, username]);
     
     // Fetch chat history only when Show Chat History is clicked for the first time
     const handleShowHistory = async () => {
@@ -180,6 +187,7 @@ const Chat = () => {
                             key={index + (showHistory ? 0 : historyCount)}
                             className={`chat-message ${msg.username && username && msg.username.trim().toLowerCase() === username.trim().toLowerCase() ? 'self' : 'other'}`}
                         >
+                            {/* System messages (profile updates, joins, etc.) are shown as normal chat-messages */}
                             <span className="username">{msg.username}</span>
                             <span className="time">[{msg.time}]</span>:
                             <span className="text"> {msg.message}</span>

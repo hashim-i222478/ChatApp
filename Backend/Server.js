@@ -67,6 +67,14 @@ wss.on('connection', (ws) => {
             message: `Your profile has been updated, ${parsed.username}!`
           };
           ws.send(JSON.stringify(updatedMsg));
+          // Broadcast to others that this user updated their profile
+          const broadcastMsg = {
+            type: 'chat-message',
+            username: 'System',
+            time: getCurrentTime(),
+            message: `${oldUsername} has updated their profile to ${parsed.username}!`
+          };
+          broadcastMessage(broadcastMsg, ws); // Exclude the user who updated
         }
         return;
       }

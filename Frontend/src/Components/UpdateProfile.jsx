@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import '../Style/updateProfile.css';
 import { authAPI } from '../Services/api';
+import { useNavigate } from 'react-router-dom';
 
 const UpdateProfile = () => {
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   // Fetch current user info on mount
   useEffect(() => {
@@ -51,8 +53,8 @@ const UpdateProfile = () => {
       // Update localStorage with new username and email
       localStorage.setItem('username', form.username);
       localStorage.setItem('email', form.email);
-      // Redirect to chat page after update
-      window.location.href = '/chat';
+      // Use React Router navigation instead of full reload
+      navigate('/chat');
     } catch (err) {
       setError(err.message);
     } finally {
