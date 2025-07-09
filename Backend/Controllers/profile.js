@@ -5,16 +5,16 @@ const axios = require('axios');
 exports.UpdateUserProfile = async (req, res) => {
     try {
       const updates = {};
-      const allowedUpdates = ['username', 'email', 'password'];
+      const allowedUpdates = ['username', 'pin'];
       allowedUpdates.forEach(field => {
         if (req.body[field]) {
           updates[field] = req.body[field];
         }
       });
   
-      // If password is being updated, hash it
-      if (updates.password) {
-        updates.password = await bcrypt.hash(updates.password, 10);
+      // If pin is being updated, hash it
+      if (updates.pin) {
+        updates.pin = await bcrypt.hash(updates.pin, 10);
       }
   
       const user = await User.findByIdAndUpdate(
@@ -30,10 +30,9 @@ exports.UpdateUserProfile = async (req, res) => {
       // Notify main server to broadcast profile update
       try {
         await axios.post('http://localhost:8080/api/internal/broadcastProfileUpdate', {
-          userId: user._id,
+          userId: user.userId,
           username: user.username,
-          oldUsername: req.user.username,
-          email: user.email
+          oldUsername: req.user.username
         });
       } catch (broadcastErr) {
         console.error('Failed to broadcast profile update:', broadcastErr.message);
@@ -42,9 +41,8 @@ exports.UpdateUserProfile = async (req, res) => {
       res.status(200).json({
         message: 'Profile updated successfully',
         user: {
-          username: user.username,
-          email: user.email,
-          _id: user._id
+          userId: user.userId,
+          username: user.username
         }
       });
     } catch (err) {

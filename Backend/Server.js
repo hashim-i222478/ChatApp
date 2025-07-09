@@ -18,10 +18,27 @@ mongoose.connect(process.env.MONGOURL, {
 .catch((err) => console.error('MongoDB connection error:', err));
 
 const clients = new Map(); // Map ws -> username
+const onlineUsers = new Map(); // username -> { email, ws }
 
 function getCurrentTime() {
   const now = new Date();
   return now.toLocaleTimeString([], { hour12: false });
+}
+
+function broadcastOnlineUsers() {
+  const users = Array.from(onlineUsers.entries()).map(([username, { email }]) => ({
+    username,
+    email
+  }));
+  const message = {
+    type: 'online-users',
+    users
+  };
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(message));
+    }
+  });
 }
 
 wss.on('connection', (ws) => {
@@ -34,7 +51,13 @@ wss.on('connection', (ws) => {
       
       if (parsed.type === 'identify') {
         const oldUsername = clients.get(ws);
+        if (oldUsername && oldUsername !== parsed.username) {
+          // Remove old username from onlineUsers on username change
+          onlineUsers.delete(oldUsername);
+        }
         clients.set(ws, parsed.username);
+        onlineUsers.set(parsed.username, { email: parsed.email || '', ws });
+        broadcastOnlineUsers();
 
         if (!oldUsername) {
           // First time identification
@@ -116,6 +139,8 @@ wss.on('connection', (ws) => {
         message: `${username} has left the chat.`
       };
       clients.delete(ws);
+      onlineUsers.delete(username);
+      broadcastOnlineUsers();
       broadcastMessage(leftMsg);
     }
   });
