@@ -34,6 +34,7 @@ exports.signup = async (req, res) => {
     await user.save();
     res.status(201).json({ message: 'User registered successfully', userId });
   } catch (err) {
+    console.error('Signup error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
@@ -82,3 +83,51 @@ exports.getuser = async (req, res) => {
   }
 };
 
+exports.GetUserId = async (req, res) => {
+
+  try{
+
+    const user = await User.findOne({ _id: req.user._id });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({
+      userId: user.userId
+    });
+
+
+  } catch(err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+
+};
+
+//fetch username from userId from url
+
+exports.fetchUsername = async (req, res) => {
+  try {
+    const user = await User.findOne({ userId: req.params.userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ username: user.username });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+//get a user by its userId
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findOne({ userId: req.params.userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({
+      userId: user.userId,
+      username: user.username
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

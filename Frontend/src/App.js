@@ -8,6 +8,8 @@ import UpdateProfile from './Components/UpdateProfile';
 import ViewProfile from './Components/ViewProfile';
 import Home from './Components/Home';
 import OnlineUsers from './Components/OnlineUsers';
+import PrivateChat from './Components/PrivateChat';
+import RecentChats from './Components/RecentChats';
 import { WebSocketProvider } from './Context/WebSocketContext';
 
 function App() {
@@ -60,6 +62,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <OnlineUsers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/private-chat/:userId" 
+              element={
+                <ProtectedRoute>
+                  <PrivateChat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/recent-chats" 
+              element={
+                <ProtectedRoute>
+                  <RecentChats />
                 </ProtectedRoute>
               } 
             />

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../Services/api';
-import '../Style/chat.css';
-import UpdateProfile from './UpdateProfile';
 import { useWebSocket } from '../Context/WebSocketContext';
+import '../Style/chat.css';
 import Header from './header';
 
 const Chat = () => {
@@ -12,9 +11,8 @@ const Chat = () => {
     const [username, setUsername] = useState('');
     const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [showHistory, setShowHistory] = useState(false);
-    const [historyLoaded, setHistoryLoaded] = useState(false);
-    const [historyCount, setHistoryCount] = useState(0);
+    const [someoneTyping, setSomeoneTyping] = useState(null);
+    const typingTimeout = useRef(null);
     
     const navigate = useNavigate();
     const chatBoxRef = useRef(null);
@@ -24,12 +22,10 @@ const Chat = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             const token = localStorage.getItem('token');
-            
             if (!token) {
                 navigate('/login');
                 return;
             }
-            
             try {
                 const response = await authAPI.getProfile();
                 setUserData(response.data);
@@ -42,84 +38,105 @@ const Chat = () => {
                 setIsLoading(false);
             }
         };
-        
         fetchUserData();
     }, [navigate]);
 
-    // Always send identify message with current username when ws, isConnected, or username changes
+    // Fetch global chat history on mount
     useEffect(() => {
-        if (ws && isConnected && username) {
-            ws.send(JSON.stringify({ type: 'identify', username }));
-        }
-    }, [ws, isConnected, username]);
-    
-    // Fetch chat history only when Show Chat History is clicked for the first time
-    const handleShowHistory = async () => {
-        if (!historyLoaded) {
+        const fetchChatHistory = async () => {
             try {
                 const token = localStorage.getItem('token');
                 const res = await fetch('http://localhost:8080/api/chats/getAllChatMessages', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
+
+                // Helper to fetch username for a userId
+                const fetchUsername = async (userId) => {
+                    const userRes = await fetch(`http://localhost:8080/api/users/username/${userId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const userData = await userRes.json();
+                    return userData.username;
+                };
+
                 let allMessages = [];
-                data.forEach(user => {
+                for (const user of data) {
+                    if (!user.userId) {
+                        console.warn('User object missing userId:', user);
+                        continue; // Skip this user
+                    }
+                    const uname = await fetchUsername(user.userId);
                     user.messages.forEach(msg => {
                         allMessages.push({
-                            username: user.username,
+                            username: uname,
                             message: msg.message,
                             time: new Date(msg.timestamp).toLocaleTimeString([], { hour12: false }),
-                            type: 'chat-message'
+                            timestamp: msg.timestamp,
+                            type: 'chat-message',
+                            from: uname.trim().toLowerCase() === username.trim().toLowerCase() ? 'me' : 'other'
                         });
                     });
-                });
-                allMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
+                }
+                allMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 setMessages(allMessages);
-                setHistoryCount(allMessages.length);
-                setHistoryLoaded(true);
             } catch (err) {
                 console.error('Failed to fetch chat history:', err);
             }
+        };
+        fetchChatHistory();
+    }, []);
+
+    // Always send identify message with current username when ws, isConnected, or username changes
+    useEffect(() => {
+        if (ws.current && isConnected && username) {
+            ws.current.send(JSON.stringify({ type: 'identify', username }));
         }
-        setShowHistory(h => !h);
-    };
+    }, [ws, isConnected, username]);
     
     // Listen for WebSocket messages
     useEffect(() => {
-        if (!ws) return;
+        if (!ws.current) return;
         const handleMessage = (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'profile-update') {
-                // Log for debugging
                 console.log('Received profile-update event:', message);
-                setMessages((prevMessages) =>
-                    prevMessages.map(msg =>
+                setMessages((prevMessages) => {
+                    // Update usernames in previous messages
+                    const updatedMessages = prevMessages.map(msg =>
                         msg.username &&
                         message.oldUsername &&
                         msg.username.trim().toLowerCase() === message.oldUsername.trim().toLowerCase()
                             ? { ...msg, username: message.username }
                             : msg
-                    )
-                );
-                // If the current user updated their own profile, update the username state
+                    );
+                    // Add the system message
+                    return [
+                        ...updatedMessages,
+                        {
+                            username: 'System',
+                            message: `${message.oldUsername} has changed their name to ${message.username}.`,
+                            time: new Date().toLocaleTimeString([], { hour12: false }),
+                            from: 'system'
+                        }
+                    ];
+                });
                 if (
                     username &&
                     message.oldUsername &&
                     username.trim().toLowerCase() === message.oldUsername.trim().toLowerCase()
                 ) {
                     setUsername(message.username);
-                    // Wait for state update, then send identify
                     setTimeout(() => {
-                        if (ws && ws.readyState === 1) {
+                        if (ws.current && ws.current.readyState === 1) {
                             console.log('Sending identify after profile update:', message.username);
-                            ws.send(JSON.stringify({ type: 'identify', username: message.username }));
+                            ws.current.send(JSON.stringify({ type: 'identify', username: message.username }));
                         } else {
-                            // Retry if not ready
                             let retryCount = 0;
                             const retryIdentify = () => {
-                                if (ws && ws.readyState === 1) {
+                                if (ws.current && ws.current.readyState === 1) {
                                     console.log('Retrying identify after profile update:', message.username);
-                                    ws.send(JSON.stringify({ type: 'identify', username: message.username }));
+                                    ws.current.send(JSON.stringify({ type: 'identify', username: message.username }));
                                 } else if (retryCount < 5) {
                                     retryCount++;
                                     setTimeout(retryIdentify, 500);
@@ -129,13 +146,30 @@ const Chat = () => {
                         }
                     }, 100);
                 }
+            } else if (message.type === 'typing') {
+                if (message.username !== username) setSomeoneTyping(message.username);
+                return;
+            } else if (message.type === 'stop-typing') {
+                setSomeoneTyping(null);
+                return;
             } else {
-                setMessages((prevMessages) => [...prevMessages, message]);
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    {
+                        ...message,
+                        from:
+                            message.username &&
+                            username &&
+                            message.username.trim().toLowerCase() === username.trim().toLowerCase()
+                                ? 'me'
+                                : 'other'
+                    }
+                ]);
             }
         };
-        ws.onmessage = handleMessage;
+        ws.current.addEventListener('message', handleMessage);
         return () => {
-            ws.onmessage = null;
+            ws.current.removeEventListener('message', handleMessage);
         };
     }, [ws, username]);
     
@@ -144,13 +178,26 @@ const Chat = () => {
         if (chatBoxRef.current) {
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [messages, someoneTyping]);
 
     function handleSubmit(e) {
         e.preventDefault();
-        if (input.trim() && ws && isConnected) {
-            ws.send(input);
+        if (input.trim() && ws.current && isConnected) {
+            ws.current.send(input);
             setInput('');
+        }
+    }
+
+    function handleInputchange(e) {
+        setInput(e.target.value);
+        if (ws.current && isConnected && username) {
+            ws.current.send(JSON.stringify({ type: 'typing', username }));
+            if (typingTimeout.current) {
+                clearTimeout(typingTimeout.current);
+            }
+            typingTimeout.current = setTimeout(() => {
+                ws.current.send(JSON.stringify({ type: 'stop-typing', username }));
+            }, 1200);
         }
     }
 
@@ -161,52 +208,82 @@ const Chat = () => {
     };
 
     if (isLoading) {
-        return <div className="loading">Loading...</div>;
+        return (
+            <div className="loading-container">
+                <div className="loading-text">Loading...</div>
+            </div>
+        );
     }
 
     return (
-        <>
+        <div className="chat-page">
             <Header />
             <div className="chat-container">
                 <div className="chat-header">
-                    <h1 className="chat-title">Welcome, {username}!</h1>
-                    <div className="user-info">
-                        
-                        
-                        <button onClick={handleShowHistory} className="history-button">
-                            {showHistory ? 'Hide Chat History' : 'Show Chat History'}
-                        </button>
-                    </div>
+                    <h1 className="chat-title">
+                        Welcome, <span className="chat-title-gradient">{username}</span> to RealTalk!
+                    </h1>
+                    <p className="chat-description">
+                        Connect with the world in real-time. Your conversations, your community.
+                    </p>
                 </div>
 
-                <div className="chat-box" id="messages" ref={chatBoxRef}>
-                    {messages
-                        .slice(showHistory ? 0 : historyCount)
-                        .map((msg, index) => (
+                <div className="chat-box" ref={chatBoxRef}>
+                    {messages.map((msg, index) => {
+                        // Skip empty messages or messages with no text
+                        if (!msg || (typeof msg.message === 'string' && msg.message.trim() === '')) {
+                            return null;
+                        }
+                        if (!msg.username || msg.username === 'System') {
+                            return (
+                                <div key={index} className="system-message">
+                                    <div className="system-message-content">
+                                        {msg.time && <span className="system-message-time">[{msg.time}] </span>}
+                                        {msg.message}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return (
                             <div
-                                key={index + (showHistory ? 0 : historyCount)}
-                                className={`chat-message ${msg.username && username && msg.username.trim().toLowerCase() === username.trim().toLowerCase() ? 'self' : 'other'}`}
+                                key={index}
+                                className={`message-container ${msg.from === 'me' ? 'message-self' : 'message-other'}`}
                             >
-                                {/* System messages (profile updates, joins, etc.) are shown as normal chat-messages */}
-                                <span className="username">{msg.username}</span>
-                                <span className="time">[{msg.time}]</span>:
-                                <span className="text"> {msg.message}</span>
+                                <div className="message-bubble">
+                                    <div className="message-header">
+                                        <span className="message-username">{msg.username}</span>
+                                        <span className="message-time">[{msg.time}]</span>
+                                    </div>
+                                    <p className="message-text">{msg.message}</p>
+                                </div>
                             </div>
-                        ))}
+                        );
+                    })}
+                    {someoneTyping && (
+                        <div className="typing-indicator">
+                            <div className="typing-content">{someoneTyping} is typing...</div>
+                        </div>
+                    )}
                 </div>
 
-                <form className="chat-form" onSubmit={handleSubmit}>
+                <div className="chat-input-container">
                     <input
-                        className="chat-input"
                         type="text"
                         placeholder="Type a message..."
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={handleInputchange}
+                        className="chat-input"
                     />
-                    <button className="chat-button" type="submit">Send</button>
-                </form>
+                    <button
+                        type="submit"
+                        onClick={handleSubmit}
+                        className="chat-send-button"
+                    >
+                        Send
+                    </button>
+                </div>
             </div>
-        </>
+        </div>
     );
 };
 

@@ -5,8 +5,8 @@ import '../Style/auth.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    userId: '',
+    pin: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,11 +42,10 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(formData);
-      
-      // Store token in localStorage
+      // Store token, userId, and username in localStorage
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('username', response.data.username);
-      
+      localStorage.setItem('userId', response.data.userId);
       // Redirect to chat
       navigate('/');
     } catch (err) {
@@ -64,28 +63,32 @@ const Login = () => {
         
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="userId">User ID</label>
             <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              id="userId"
+              name="userId"
+              value={formData.userId}
               onChange={handleChange}
               required
-              placeholder="Enter your email"
+              pattern="\d{9}"
+              placeholder="Enter your 9-digit User ID"
+              maxLength={9}
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="pin">4-digit PIN</label>
             <input
               type="password"
-              id="password"
-              name="password"
-              value={formData.password}
+              id="pin"
+              name="pin"
+              value={formData.pin}
               onChange={handleChange}
               required
-              placeholder="Enter your password"
+              pattern="\d{4}"
+              placeholder="Enter your 4-digit PIN"
+              maxLength={4}
             />
           </div>
           

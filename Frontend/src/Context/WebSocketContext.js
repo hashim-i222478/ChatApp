@@ -17,7 +17,13 @@ export const WebSocketProvider = ({ username, children }) => {
     ws.current.onopen = () => {
       setIsConnected(true);
       console.log('WebSocket connection established');
-      ws.current.send(JSON.stringify({ type: 'identify', username, email: localStorage.getItem('email') || '' }));
+      ws.current.send(
+        JSON.stringify({
+          type: 'identify',
+          username,
+          userId: localStorage.getItem('userId')
+        })
+      );
     };
 
     ws.current.onclose = () => setIsConnected(false);
@@ -41,7 +47,7 @@ export const WebSocketProvider = ({ username, children }) => {
   }, [username]);
 
   return (
-    <WebSocketContext.Provider value={{ ws: ws.current, isConnected, onlineUsers }}>
+    <WebSocketContext.Provider value={{ ws, isConnected, onlineUsers }}>
       {children}
     </WebSocketContext.Provider>
   );

@@ -1,0 +1,219 @@
+/* Recent Chats Page Styles */
+.recent-chats-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
+    animation: fadeIn 0.7s ease-out;
+}
+
+.recent-chats-container {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.recent-chats-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    animation: fadeIn 0.7s ease-out;
+}
+
+.recent-chats-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.title-icon {
+    font-size: 1.5rem;
+}
+
+.recent-chats-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.recent-chats-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.chat-item:hover {
+    background: #f3f4f6;
+    transform: translateY(-2px);
+}
+
+.user-avatar {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.initial-circle {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: linear-gradient(135deg, #2563eb 0%, #9333ea 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.username {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.userid {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.last-message-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.message-text {
+    color: #a5b4fc;
+}
+
+.message-time {
+    color: #b6c2e1;
+    font-size: 0.75rem;
+}
+
+.no-message {
+    color: #b6c2e1;
+    font-style: italic;
+}
+
+.unread-count {
+    background: #ef4444;
+    color: #ffffff;
+    border-radius: 50%;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: auto;
+}
+
+.no-chats {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: center;
+    padding: 1rem;
+}
+
+.loading-chats {
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: center;
+    padding: 1rem;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .recent-chats-container {
+        padding: 1.5rem 1rem;
+    }
+
+    .recent-chats-title {
+        font-size: 1.75rem;
+    }
+
+    .recent-chats-subtitle {
+        font-size: 0.8125rem;
+    }
+
+    .chat-item {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .recent-chats-container {
+        padding: 1rem 0.5rem;
+    }
+
+    .recent-chats-title {
+        font-size: 1.5rem;
+    }
+
+    .recent-chats-card {
+        padding: 1.5rem;
+    }
+
+    .initial-circle {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+    }
+
+    .username {
+        font-size: 0.875rem;
+    }
+
+    .userid, .message-text, .message-time, .no-message {
+        font-size: 0.6875rem;
+    }
+
+    .unread-count {
+        font-size: 0.625rem;
+        padding: 0.2rem 0.5rem;
+    }
+}

@@ -1,34 +1,42 @@
-/* Online Users Styles */
-.online-users-wrapper {
+/* Online Users Page Styles */
+.online-users-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
+  animation: fadeIn 0.7s ease-out;
+}
+
+.online-users-container {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
 .online-users-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(44,62,80,0.10);
-  padding: 40px 32px 32px 32px;
-  min-width: 340px;
-  max-width: 95vw;
-  text-align: center;
-  animation: fadeIn 0.7s;
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  animation: fadeIn 0.7s ease-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.online-users-card h2 {
-  margin-bottom: 28px;
-  color: #232946;
+.online-users-title {
   font-size: 2rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-icon {
+  font-size: 1.5rem;
+}
+
+.online-users-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
 }
 
 .online-users-list {
@@ -37,55 +45,142 @@
   margin: 0;
 }
 
-.online-user-item {
+.user-item {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 14px 0;
-  border-bottom: 1px solid #f1f1f1;
-  font-size: 1.08rem;
-  color: #232946;
-  transition: background 0.2s;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
 }
 
-.online-user-item:last-child {
-  border-bottom: none;
+.user-item:not(.self):hover {
+  background: #f3f4f6;
+  cursor: pointer;
+  transform: translateY(-2px);
+}
+
+.user-item.self {
+  opacity: 0.7;
+}
+
+.user-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .online-dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0.5rem;
+  height: 0.5rem;
   background: #22c55e;
-  margin-right: 2px;
-  box-shadow: 0 0 6px #22c55e55;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
 }
 
-.online-username {
+.initial-circle {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #2563eb 0%, #9333ea 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #232946;
 }
 
-.online-email {
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.username {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.userid {
+  font-size: 0.75rem;
   color: #6b7280;
-  font-size: 0.98rem;
+}
+
+.you-badge {
+  font-size: 0.75rem;
+  color: #2563eb;
+  background: #dbeafe;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  align-self: flex-start;
 }
 
 .no-users {
-  color: #d7263d;
-  font-size: 1.08rem;
-  padding: 18px 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  padding: 1rem;
 }
 
-.online-users-loading {
-  color: #232946;
-  font-size: 1.1rem;
-  margin: 20px 0;
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: translateY(20px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
 }
 
-.online-users-error {
-  color: #d7263d;
-  font-size: 1.1rem;
-  margin: 20px 0;
-} 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .online-users-container {
+      padding: 1.5rem 1rem;
+  }
+
+  .online-users-title {
+      font-size: 1.75rem;
+  }
+
+  .online-users-subtitle {
+      font-size: 0.8125rem;
+  }
+
+  .user-item {
+      padding: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .online-users-container {
+      padding: 1rem 0.5rem;
+  }
+
+  .online-users-title {
+      font-size: 1.5rem;
+  }
+
+  .online-users-card {
+      padding: 1.5rem;
+  }
+
+  .initial-circle {
+      width: 2rem;
+      height: 2rem;
+      font-size: 1rem;
+  }
+
+  .username {
+      font-size: 0.875rem;
+  }
+
+  .userid, .you-badge {
+      font-size: 0.6875rem;
+  }
+}

@@ -6,12 +6,14 @@ import '../Style/auth.css';
 const SignUp = () => {
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    pin: '',
+    confirmPin: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [newUserId, setNewUserId] = useState('');
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   
   // Check if user is already logged in
@@ -34,34 +36,41 @@ const SignUp = () => {
     setLoading(true);
     setError('');
 
-    // Validate password match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Validate PIN match
+    if (formData.pin !== formData.confirmPin) {
+      setError('PINs do not match');
       setLoading(false);
       return;
     }
-
-    // Validate password strength (optional)
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    // Validate PIN is 4 digits
+    if (!/^\d{4}$/.test(formData.pin)) {
+      setError('PIN must be exactly 4 digits');
       setLoading(false);
       return;
     }
 
     try {
-      // Remove confirmPassword before sending to API
-      const { confirmPassword, ...dataToSend } = formData;
-      
-      await authAPI.register(dataToSend);
-      
-      // Show success message and redirect to login page
-      alert('Registration successful! Please login with your credentials.');
-      navigate('/login');
+      // Remove confirmPin before sending to API
+      const { confirmPin, ...dataToSend } = formData;
+      const response = await authAPI.register(dataToSend);
+      setNewUserId(response.data.userId);
+      setShowModal(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(newUserId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    navigate('/login');
   };
 
   return (
@@ -83,56 +92,61 @@ const SignUp = () => {
               placeholder="Choose a username"
             />
           </div>
-          
           <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="pin">4-digit PIN</label>
             <input
               type="password"
-              id="password"
-              name="password"
-              value={formData.password}
+              id="pin"
+              name="pin"
+              value={formData.pin}
               onChange={handleChange}
               required
-              placeholder="Create a password"
-              minLength="6"
+              pattern="\d{4}"
+              placeholder="Create a 4-digit PIN"
+              maxLength={4}
             />
           </div>
-          
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPin">Confirm PIN</label>
             <input
               type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
+              id="confirmPin"
+              name="confirmPin"
+              value={formData.confirmPin}
               onChange={handleChange}
               required
-              placeholder="Confirm your password"
+              pattern="\d{4}"
+              placeholder="Confirm your 4-digit PIN"
+              maxLength={4}
             />
           </div>
-          
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? 'Signing up...' : 'Sign Up'}
           </button>
         </form>
-        
         <p className="auth-redirect">
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
+      {showModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3>Registration Successful!</h3>
+            <p>Your User ID is:</p>
+            <div className="userid-copy-row">
+              <span className="userid-value">{newUserId}</span>
+              <button className="copy-btn" onClick={handleCopy}>Copy</button>
+            </div>
+            <p style={{ fontSize: '0.95em', color: '#888' }}>Please save this User ID. You will need it to log in.</p>
+            <button className="auth-button" onClick={handleCloseModal} style={{ marginTop: 16 }}>Go to Login</button>
+          </div>
+          {copied && (
+            <div className="copied-modal">
+              User ID copied!
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

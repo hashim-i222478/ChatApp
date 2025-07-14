@@ -7,7 +7,6 @@ const ViewProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -25,32 +24,52 @@ const ViewProfile = () => {
     fetchProfile();
   }, []);
 
-  // For security, we do not fetch the real password. Use a placeholder.
-  const passwordPlaceholder = '********';
-
   return (
-    <>
+    <div className="view-profile-page">
       <Header />
-      <div className="view-profile-wrapper">
+      <div className="view-profile-container">
         <div className="view-profile-card">
-          <h2>Your Profile</h2>
-          {loading && <div className="profile-loading">Loading...</div>}
+          <h2 className="view-profile-title">
+            <span className="title-icon">👤</span> Your Account Details
+          </h2>
+
+          {loading && <div className="profile-loading">Loading your profile...</div>}
           {error && <div className="profile-error">{error}</div>}
+
           {profile && !loading && !error && (
             <>
-              <div className="profile-row">
-                <span className="profile-label">Username:</span>
-                <span className="profile-value">{profile.username}</span>
+              <div className="profile-info">
+                <div className="profile-row">
+                  <span className="profile-label">Username</span>
+                  <span className="profile-value">{profile.username}</span>
+                </div>
+                <div className="profile-row">
+                  <span className="profile-label">User ID</span>
+                  <span className="profile-value">{profile.userId}</span>
+                </div>
               </div>
-              <div className="profile-row">
-                <span className="profile-label">Email:</span>
-                <span className="profile-value">{profile.email}</span>
+
+              <div className="profile-section">
+                <h3 className="section-title">💡 About this Profile</h3>
+                <p className="section-text">
+                  This account is uniquely identified by your <strong>User ID</strong>. 
+                  Share it with others to connect and chat in real-time on RealTalk.
+                </p>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="section-title">🔒 Security Tips</h3>
+                <ul className="security-tips">
+                  <li>Keep your 4-digit PIN private.</li>
+                  <li>Use the "Update Profile" option to change your username anytime.</li>
+                  <li>Log out when you're done using the app.</li>
+                </ul>
               </div>
             </>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
