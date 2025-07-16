@@ -1,70 +1,144 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 🟢 RealTalk - Real-Time Chat Application
 
-## Available Scripts
+**RealTalk** is a secure, real-time chat application built with **React**, **Node.js**, **WebSockets**, and **MongoDB**. It supports private messaging, user authentication, local and persistent message storage, live online user tracking, and advanced features like typing indicators and message deletion.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🚀 Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+* 🔐 **Secure Authentication** with JWT
+* 💬 **Private Messaging** using WebSocket
+* 💾 **LocalStorage for Online Users** to prevent DB writes
+* 🌐 **Offline Message Storage** in MongoDB
+* 📡 **Typing Indicators**
+* 👀 **Online Users List**
+* 🧠 **Previous Conversations** loaded on chat open
+* 🧾 **Start Chat by User ID**
+* 🗑️ **Delete Messages** for self or everyone
+* 🔔 **Real-Time Notifications** for new messages
+* 🧍 **View & Update Profile**
+* 💻 **Responsive UI with Modern Design**
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🧑‍💻 Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Frontend:
 
-### `npm run build`
+* React
+* React Router
+* Context API (for WebSocket state)
+* LocalStorage
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Backend:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+* Node.js
+* Express.js
+* WebSocket (ws)
+* MongoDB + Mongoose
+* JWT Authentication
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 📦 Installation
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Prerequisites:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+* Node.js & npm
+* MongoDB
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Clone the repo:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+git clone https://github.com/hashim-i222478/ChatApp.git
+cd realtalk-chat-app
+```
 
-## Learn More
+### Backend Setup:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+cd Backend
+npm install
+# Add your .env file with:
+# MONGOURL=your-mongodb-url
+# JWT_SECRET=your-secret
+node server.js
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Frontend Setup:
 
-### Code Splitting
+```bash
+cd Frontend
+npm install
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## 📝 Folder Structure
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
+/Frontend
+  /Components
+    Header.jsx
+    Chat.jsx
+    PrivateChats.jsx
+    ...
+  /Style
+  /Services
+  /Context
+  App.js
+  index.js
 
-### Making a Progressive Web App
+/Backend
+  /Controllers
+  /Middlewares
+  /Models
+  /Routes
+  server.js
+  wsServer.js
+  ProfileServer.js
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## 🔐 Authentication
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+* Users are identified by a **9-digit numeric ID** and a **4-digit PIN**
+* JWT is used to protect routes and socket connections
 
-### Deployment
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 💡 How Message Delivery Works
 
-### `npm run build` fails to minify
+* If recipient is **online**:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+  * Message is delivered instantly via WebSocket
+  * Stored in their **localStorage**
+* If recipient is **offline**:
+
+  * Message is saved in **MongoDB**
+  * Delivered & transferred to localStorage upon next login
+
+---
+
+## 🗑️ Message Deletion
+
+* **Delete for me**: Removes the message from current user's localStorage
+* **Delete for everyone**: Broadcasts deletion and removes message from both users' localStorage
+
+---
+
+## 🔔 Notifications
+
+* Real-time notification appears if:
+
+  * The user is online but **not on the chat page**
+  * The message is received from any other user
+
+---
+
+## 🙋‍♂️ Contributing
+
+Pull requests are welcome! Please submit issues or suggestions to improve functionality or design.
