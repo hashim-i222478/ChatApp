@@ -52,7 +52,7 @@
 
 ```bash
 git clone https://github.com/hashim-i222478/ChatApp.git
-cd realtalk-chat-app
+cd ChatApp
 ```
 
 ### Backend Setup:
@@ -63,7 +63,8 @@ npm install
 # Add your .env file with:
 # MONGOURL=your-mongodb-url
 # JWT_SECRET=your-secret
-node server.js
+node Sserver.js
+node ProfileServer.js
 ```
 
 ### Frontend Setup:
