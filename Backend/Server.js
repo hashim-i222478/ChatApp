@@ -7,6 +7,7 @@ const userRoutes = require('./Routes/userRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
 const ChatMessages = require('./Models/ChatMessages');
 const wss = require('./wsServer');
+const PrivateMessages = require('./Models/PrivateMessages');
 
 dotenv.config();
 
@@ -44,7 +45,7 @@ function broadcastOnlineUsers() {
 wss.on('connection', (ws) => {
   console.log('New client connected');
   
-  ws.on('message', (message) => {
+  ws.on('message', async (message) => {
     try {
       // Try to parse message as JSON for the identify message or private message
       const parsed = JSON.parse(message.toString());
@@ -99,6 +100,27 @@ wss.on('connection', (ws) => {
           };
           broadcastMessage(broadcastMsg, ws); // Exclude the user who updated
         }
+        // --- Deliver and delete pending messages for this user ---
+        const pendingDocs = await PrivateMessages.find({ participants: parsed.userId });
+        for (const doc of pendingDocs) {
+          const deliverable = doc.messages.filter(msg => msg.to === parsed.userId);
+          for (const msg of deliverable) {
+            ws.send(JSON.stringify({
+              type: 'private-message',
+              fromUserId: msg.from,
+              toUserId: msg.to,
+              message: msg.message,
+              time: msg.time instanceof Date ? msg.time.toISOString() : msg.time
+            }));
+          }
+          // Remove delivered messages
+          doc.messages = doc.messages.filter(msg => msg.to !== parsed.userId);
+          if (doc.messages.length === 0) {
+            await doc.deleteOne();
+          } else {
+            await doc.save();
+          }
+        }
         return;
       }
 
@@ -133,7 +155,7 @@ wss.on('connection', (ws) => {
         if (!sender) return;
         const { toUserId, message: privateMsg } = parsed;
         const recipient = onlineUsers.get(toUserId);
-        const time = getCurrentTime();
+        const time = new Date().toISOString();
         // Prepare payload for both sender and recipient
         const payload = {
           type: 'private-message',
@@ -143,10 +165,11 @@ wss.on('connection', (ws) => {
           message: privateMsg,
           time
         };
-        // Send to recipient if online
         if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
+          // Recipient online: deliver instantly
           recipient.ws.send(JSON.stringify(payload));
         }
+        // Do NOT store in DB here if offline
         // Echo back to sender for their chat window
         ws.send(JSON.stringify(payload));
         return;

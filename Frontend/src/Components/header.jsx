@@ -10,6 +10,7 @@ const Header = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
         localStorage.removeItem('email');
+        localStorage.removeItem('userId');
         navigate('/login');
     };
 

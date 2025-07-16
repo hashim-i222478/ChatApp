@@ -6,7 +6,7 @@ const verifyToken = require('../Middlewares/authMiddleware');
 // Private chat
 router.get('/private-messages/:userId', verifyToken, getPrivateChatHistory);
 router.post('/private-messages/send', verifyToken, sendPrivateMessage);
-router.delete('/private-messages/:userId/:messageId', verifyToken, deletePrivateMessage);
+router.delete('/private-messages/:userId', verifyToken, deletePrivateMessage);
 router.get('/getAllChatMessages', verifyToken, getAllChatMessages);
 router.get('/recent-private-chats', verifyToken, getRecentPrivateChats);
 

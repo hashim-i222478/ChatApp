@@ -82,14 +82,14 @@ exports.sendPrivateMessage = async (req, res) => {
     }
 };
 
-// Delete a private message (optional)
+// Delete a private message //only take userId 
+//delete all messages of that userId
 exports.deletePrivateMessage = async (req, res) => {
     try {
-        const myUserId = req.user.userId;
+        const myUserId = req.user.userId; // from auth middleware
         const otherUserId = req.params.userId;
-        const { messageId } = req.params;
 
-        // Find the conversation
+        // Find the conversation document for these two users
         const conversation = await PrivateMessages.findOne({
             participants: { $all: [myUserId, otherUserId] }
         });
@@ -98,24 +98,20 @@ exports.deletePrivateMessage = async (req, res) => {
             return res.status(404).json({ message: 'Conversation not found.' });
         }
 
-        // Find the message
-        const msgIndex = conversation.messages.findIndex(
-            (msg) => msg._id.toString() === messageId && msg.from === myUserId
-        );
-        if (msgIndex === -1) {
-            return res.status(404).json({ message: 'Message not found or not authorized.' });
-        }
+        // Filter out messages from the other user
+        conversation.messages = conversation.messages.filter(msg => msg.from !== otherUserId);
 
-        conversation.messages.splice(msgIndex, 1);
+        // Save the updated conversation
         await conversation.save();
-
-        res.json({ success: true });
-        console.log(conversation);
+        console.log("Delete private message Controller");
+        res.status(200).json({ message: 'Messages deleted successfully.' });
     } catch (error) {
         console.error('Error deleting private message:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
 
 // Get all recent private chats for a user
 exports.getRecentPrivateChats = async (req, res) => {

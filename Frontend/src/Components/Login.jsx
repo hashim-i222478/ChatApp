@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '../Services/api';
-import '../Style/auth.css';
+import '../Style/login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -42,11 +42,9 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(formData);
-      // Store token, userId, and username in localStorage
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('username', response.data.username);
       localStorage.setItem('userId', response.data.userId);
-      // Redirect to chat
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
@@ -56,54 +54,64 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-form-container">
-        <h2>Login to Chat App</h2>
-        {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="userId">User ID</label>
-            <input
-              type="text"
-              id="userId"
-              name="userId"
-              value={formData.userId}
-              onChange={handleChange}
-              required
-              pattern="\d{9}"
-              placeholder="Enter your 9-digit User ID"
-              maxLength={9}
-            />
+    <div className="login-page">
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <h2 className="login-title">
+              <span className="title-icon"></span> Welcome Back to RealTalk
+            </h2>
+            <p className="login-subtitle">Enter your credentials to continue</p>
           </div>
+          {error && <div className="error-message">{error}</div>}
           
-          <div className="form-group">
-            <label htmlFor="pin">4-digit PIN</label>
-            <input
-              type="password"
-              id="pin"
-              name="pin"
-              value={formData.pin}
-              onChange={handleChange}
-              required
-              pattern="\d{4}"
-              placeholder="Enter your 4-digit PIN"
-              maxLength={4}
-            />
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label htmlFor="userId" className="form-label">User ID</label>
+              <input
+                type="text"
+                id="userId"
+                name="userId"
+                value={formData.userId}
+                onChange={handleChange}
+                required
+                pattern="\d{9}"
+                placeholder="Enter your 9-digit User ID"
+                maxLength={9}
+                className="form-input"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="pin" className="form-label">4-digit PIN</label>
+              <input
+                type="password"
+                id="pin"
+                name="pin"
+                value={formData.pin}
+                onChange={handleChange}
+                required
+                pattern="\d{4}"
+                placeholder="Enter your 4-digit PIN"
+                maxLength={4}
+                className="form-input"
+              />
+            </div>
+            
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? 'Logging in...' : 'Sign In'}
+            </button>
+          </form>
+          
+          <div className="login-footer">
+            <p className="login-redirect">
+              New to RealTalk? <Link to="/signup">Create an Account</Link>
+            </p>
           </div>
-          
-          <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        
-        <p className="auth-redirect">
-          Don't have an account? <Link to="/signup">Sign Up</Link>
-        </p>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Login;
-

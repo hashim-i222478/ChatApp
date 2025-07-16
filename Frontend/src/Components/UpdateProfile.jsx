@@ -71,7 +71,7 @@ const UpdateProfile = () => {
       localStorage.setItem('username', form.username);
       setForm({ ...form, pin: '', confirmPin: '' });
 
-      setTimeout(() => navigate('/chat'), 1000); // Delay navigation for feedback
+      
     } catch (err) {
       setError(` ${err.message}`);
     } finally {
