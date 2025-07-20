@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../Style/home.css';
 import Header from './header';
@@ -14,6 +14,14 @@ const Home = () => {
     const [newChatError, setNewChatError] = useState('');
     const [newChatLoading, setNewChatLoading] = useState(false);
     const [showNewChatModal, setShowNewChatModal] = useState(false);
+    const [unread, setUnread] = useState({});
+    const [notifVisible, setNotifVisible] = useState(false);
+    const [notifAnimClass, setNotifAnimClass] = useState('');
+    const notifTimeoutRef = useRef(null);
+    const notifExitTimeoutRef = useRef(null);
+    const prevUnreadRef = useRef({});
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarAnimClass, setSidebarAnimClass] = useState('');
 
     useEffect(() => {   
         const token = localStorage.getItem('token');
@@ -35,6 +43,67 @@ const Home = () => {
         }
     }, [location, navigate]);
 
+    useEffect(() => {
+        const updateUnread = () => {
+            const data = JSON.parse(localStorage.getItem('unread_private') || '{}');
+            setUnread(data);
+        };
+        updateUnread();
+        window.addEventListener('unread-updated', updateUnread);
+        return () => window.removeEventListener('unread-updated', updateUnread);
+    }, []);
+
+    // Play notification sound
+    const playNotificationSound = () => {
+      // Simple beep using Web Audio API
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 880;
+        g.gain.value = 0.08;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        setTimeout(() => { o.stop(); ctx.close(); }, 180);
+      } catch (e) {}
+    };
+
+    // Show notification panel with animation and auto-dismiss
+    useEffect(() => {
+      const prevUnread = prevUnreadRef.current;
+      let shouldShow = false;
+      // If any unread count increased, show notification
+      for (const userId of Object.keys(unread)) {
+        if (!prevUnread[userId] || unread[userId] > prevUnread[userId]) {
+          shouldShow = true;
+          break;
+        }
+      }
+      // If a new user or count increased, or if panel is not visible but there are unread messages
+      if (shouldShow || (Object.keys(unread).length > 0 && !notifVisible)) {
+        setNotifVisible(true);
+        setNotifAnimClass('home-notification-panel-appear');
+        playNotificationSound();
+        if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
+        if (notifExitTimeoutRef.current) clearTimeout(notifExitTimeoutRef.current);
+        notifTimeoutRef.current = setTimeout(() => {
+          setNotifAnimClass('home-notification-panel-exit');
+          notifExitTimeoutRef.current = setTimeout(() => {
+            setNotifVisible(false);
+          }, 500); // match exit animation duration
+        }, 10000);
+      } else if (Object.keys(unread).length === 0) {
+        setNotifVisible(false);
+      }
+      prevUnreadRef.current = { ...unread };
+      return () => {
+        if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
+        if (notifExitTimeoutRef.current) clearTimeout(notifExitTimeoutRef.current);
+      };
+    }, [unread]);
+
     const handleStartNewChat = async (e) => {
         e.preventDefault();
         setNewChatError('');
@@ -53,6 +122,25 @@ const Home = () => {
             setNewChatLoading(false);
         }
     };
+
+    const handleClearNotifications = () => {
+        localStorage.removeItem('unread_private');
+        setUnread({});
+        window.dispatchEvent(new CustomEvent('unread-updated'));
+    };
+
+    // Sidebar open/close handlers
+    const openSidebar = () => {
+      setSidebarOpen(true);
+      setSidebarAnimClass('');
+    };
+    const closeSidebar = () => {
+      setSidebarAnimClass('home-notification-sidebar-exit');
+      setTimeout(() => setSidebarOpen(false), 300);
+    };
+
+    // Unread count for badge
+    const unreadCount = Object.values(unread).reduce((a, b) => a + b, 0);
 
     if (isCheckingAuth) {
         return null;
@@ -90,7 +178,45 @@ const Home = () => {
         <>
             <Header />
             <div className="home-background">
-                
+                {/* Notification Bell Icon */}
+                <button className="home-notification-bell" onClick={openSidebar} aria-label="View notifications">
+                  <span role="img" aria-label="Notifications">🔔</span>
+                  {unreadCount > 0 && <span className="home-notification-badge">{unreadCount}</span>}
+                </button>
+                {/* Notification Sidebar */}
+                {sidebarOpen && (
+                  <div className={`home-notification-sidebar ${sidebarAnimClass}`}>
+                    <div className="home-notification-sidebar-header">
+                      <span className="home-notification-sidebar-title">Private Message Notifications</span>
+                      <button className="home-notification-sidebar-close" onClick={closeSidebar} title="Close notifications">×</button>
+                    </div>
+                    <div className="home-notification-sidebar-list">
+                      {Object.keys(unread).length === 0 ? (
+                        <div style={{ color: '#6b7280', textAlign: 'center', marginTop: '2rem', fontWeight: 500 }}>
+                          No unread private messages.
+                        </div>
+                      ) : (
+                        Object.keys(unread).map(userId => {
+                          // Try to get username from localStorage chat history
+                          let username = userId;
+                          const chatKey = `chat_${userId}`;
+                          const msgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+                          for (let i = msgs.length - 1; i >= 0; i--) {
+                            if (msgs[i].username) { username = msgs[i].username; break; }
+                          }
+                          return (
+                            <div key={userId} className="home-notification-sidebar-message">
+                              You have {unread[userId]} unread message{unread[userId] > 1 ? 's' : ''} from <span className="home-notification-sidebar-username">{username}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    {Object.keys(unread).length > 0 && (
+                      <button className="home-notification-sidebar-clear" onClick={handleClearNotifications}>Clear All</button>
+                    )}
+                  </div>
+                )}
 
                 {/* Modal for New Conversation */}
                 {showNewChatModal && (

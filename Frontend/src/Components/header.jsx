@@ -1,59 +1,35 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
+import Logo from './Logo';
+import Navbar from './Navbar';
+import MobileMenu from './MobileMenu';
 import '../Style/header.css';
+
 const Header = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        localStorage.removeItem('email');
-        localStorage.removeItem('userId');
-        navigate('/login');
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/login';
     };
 
     const navItems = [
-        { path: '/', label: 'Home' },
-        { path: '/chat', label: 'Global Chats' },
-        { path: '/profile', label: 'View Profile' },
-        { path: '/update-profile', label: 'Update Profile' },
-        { path: '/online-users', label: 'Online Users' },
-        { path: '/recent-chats', label: 'Recent Chats' },
+        { path: '/', icon: 'AiOutlineHome', label: 'Home' },
+        { path: '/recent-chats', icon: 'AiOutlineClockCircle', label: 'Recent Chats' },
+        { path: '/chat', icon: 'AiOutlineGlobal', label: 'Global Chats' },
+        { path: '/profile', icon: 'AiOutlineUser', label: 'View Profile' },
+        { path: '/online-users', icon: 'AiOutlineTeam', label: 'Online Users' },
     ];
 
     return (
         <header className="header">
             <div className="header-container">
                 <div className="header-row">
-                    {/* Logo */}
-                    <div className="logo">
-                        <h1 className="logo-text">
-                            RealTalk
-                        </h1>
-                    </div>
-
-                    {/* Desktop Navigation */}
-                    <nav className="nav desktop-nav">
-                        {navItems.map((item) => (
-                            <button
-                                key={item.path}
-                                onClick={() => navigate(item.path)}
-                                className={`nav-button${location.pathname === item.path ? ' nav-button-active' : ''}`}
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                        <button
-                            onClick={handleLogout}
-                            className="nav-button logout-button"
-                        >
-                            Logout
-                        </button>
-                    </nav>
-
-                    {/* Mobile Menu Button */}
+                    <Logo />
+                    <Navbar navItems={navItems} location={location} navigate={navigate} />
                     <div className="mobile-menu-button-container">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -69,35 +45,14 @@ const Header = () => {
                         </button>
                     </div>
                 </div>
-
-                {/* Mobile Menu */}
-                {isMobileMenuOpen && (
-                    <div className="mobile-menu">
-                        <nav className="nav mobile-nav">
-                            {navItems.map((item) => (
-                                <button
-                                    key={item.path}
-                                    onClick={() => {
-                                        navigate(item.path);
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className={`nav-button${location.pathname === item.path ? ' nav-button-active' : ''}`}
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
-                            <button
-                                onClick={() => {
-                                    handleLogout();
-                                    setIsMobileMenuOpen(false);
-                                }}
-                                className="nav-button logout-button"
-                            >
-                                Logout
-                            </button>
-                        </nav>
-                    </div>
-                )}
+                <MobileMenu
+                    navItems={navItems}
+                    isOpen={isMobileMenuOpen}
+                    onClose={() => setIsMobileMenuOpen(false)}
+                    onLogout={handleLogout}
+                    location={location}
+                    navigate={navigate}
+                />
             </div>
         </header>
     );

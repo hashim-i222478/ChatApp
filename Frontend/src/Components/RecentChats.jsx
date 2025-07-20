@@ -25,7 +25,9 @@ const ChatItem = ({ chat, handleChatClick }) => (
                 : chat.lastMessage}
             </span>
             <span className="message-time">
-              {chat.lastMessageTime && new Date(chat.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {chat.lastMessageTime
+                ? new Date(chat.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : ''}
             </span>
           </>
         ) : (
@@ -49,6 +51,13 @@ const LoadingState = () => (
   <li className="loading-chats">Loading...</li>
 );
 
+// Helper to safely parse date strings
+function getValidDateString(time) {
+  if (!time) return '';
+  const d = new Date(time);
+  return isNaN(d.getTime()) ? '' : d.toISOString();
+}
+
 const RecentChats = () => {
   const [recentChats, setRecentChats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,21 +65,36 @@ const RecentChats = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchRecentChats = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:8080/api/chats/recent-private-chats`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+    setLoading(true);
+    const unread = JSON.parse(localStorage.getItem('unread_private') || '{}');
+    const chats = [];
+    for (let key in localStorage) {
+      if (key.startsWith('chat_')) {
+        const userId = key.replace('chat_', '');
+        if (userId === myUserId) continue;
+        const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+        if (msgs.length === 0) continue;
+        // Find last message
+        const lastMsg = msgs[msgs.length - 1];
+        // Find username (from last message with username or fromUsername, fallback to userId)
+        let username = userId;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].username) { username = msgs[i].username; break; }
+          if (msgs[i].fromUsername) { username = msgs[i].fromUsername; break; }
+        }
+        chats.push({
+          userId,
+          username,
+          lastMessage: lastMsg.message || '',
+          lastMessageTime: getValidDateString(lastMsg.time),
+          unreadCount: unread[userId] || 0
         });
-        const data = await res.json();
-        setRecentChats(data);
-      } catch (err) {
-        setRecentChats([]);
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchRecentChats();
+    }
+    // Sort by last message time descending
+    chats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+    setRecentChats(chats);
+    setLoading(false);
   }, [myUserId]);
 
   const handleChatClick = (chat) => {

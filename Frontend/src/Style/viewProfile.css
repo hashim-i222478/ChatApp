@@ -1,4 +1,4 @@
-/* View Profile Page Styles */
+/* View Profile Styles */
 .view-profile-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
@@ -12,31 +12,57 @@
 }
 
 .view-profile-card {
-  background: #ffffff;
-  border-radius: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(5px);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
   padding: 2rem;
-  animation: fadeIn 0.7s ease-out;
+  animation: slideInUp 0.7s ease-out;
+  border: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.view-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .view-profile-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 1.5rem;
+  color: #1e293b;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .title-icon {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  color: #2563eb;
+}
+
+.edit-profile-button {
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.edit-profile-button:hover {
+  box-shadow: 0 15px 25px -5px rgba(37, 99, 235, 0.4);
+  transform: translateY(-3px);
 }
 
 .profile-loading {
   text-align: center;
+  font-size: 1rem;
   color: #6b7280;
-  font-size: 1.125rem;
   padding: 1rem;
   animation: pulse 1.5s infinite;
 }
@@ -57,26 +83,28 @@
 
 .profile-row {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e5e7eb;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.profile-row:hover {
+  background: #e0e7ff;
+  transform: translateX(5px);
 }
 
 .profile-label {
   font-weight: 600;
   color: #374151;
-  width: 120px;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .profile-value {
-  font-size: 0.875rem;
-  color: #111827;
-  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #1e293b;
+  font-size: 1rem;
 }
 
 .profile-section {
@@ -86,7 +114,7 @@
 .section-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: #2563eb;
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
@@ -94,37 +122,100 @@
 }
 
 .section-text {
-  font-size: 0.875rem;
-  color: #6b7280;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.6;
 }
 
 .security-tips {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
+  list-style: none;
+  padding-left: 0;
 }
 
 .security-tips li {
-  font-size: 0.875rem;
-  color: #374151;
+  font-size: 0.95rem;
+  color: #64748b;
   padding: 0.5rem 0;
   position: relative;
-  padding-left: 1.5rem;
 }
 
 .security-tips li:before {
   content: '•';
-  position: absolute;
-  left: 0;
   color: #2563eb;
-  font-size: 1rem;
+  font-weight: 700;
+  margin-right: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .view-profile-container {
+      padding: 1.5rem 1rem;
+  }
+
+  .view-profile-card {
+      padding: 1.5rem;
+  }
+
+  .view-profile-title {
+      font-size: 1.75rem;
+  }
+
+  .edit-profile-button {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.9rem;
+  }
+
+  .profile-row {
+      padding: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-profile-container {
+      padding: 1rem 0.5rem;
+  }
+
+  .view-profile-card {
+      padding: 1rem;
+  }
+
+  .view-profile-title {
+      font-size: 1.5rem;
+  }
+
+  .edit-profile-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+  }
+
+  .profile-row {
+      padding: 0.5rem;
+  }
+
+  .section-title {
+      font-size: 1.125rem;
+  }
+
+  .section-text, .security-tips li {
+      font-size: 0.875rem;
+  }
 }
 
 @keyframes fadeIn {
   from {
       opacity: 0;
       transform: translateY(20px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+      opacity: 0;
+      transform: translateY(30px);
   }
   to {
       opacity: 1;
@@ -141,48 +232,5 @@
   }
   100% {
       opacity: 1;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .view-profile-container {
-      padding: 1.5rem 1rem;
-  }
-
-  .view-profile-title {
-      font-size: 1.75rem;
-  }
-
-  .profile-row {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.25rem;
-  }
-
-  .profile-label {
-      width: auto;
-  }
-}
-
-@media (max-width: 640px) {
-  .view-profile-container {
-      padding: 1rem 0.5rem;
-  }
-
-  .view-profile-title {
-      font-size: 1.5rem;
-  }
-
-  .view-profile-card {
-      padding: 1.5rem;
-  }
-
-  .section-title {
-      font-size: 1.125rem;
-  }
-
-  .section-text, .security-tips li {
-      font-size: 0.8125rem;
   }
 }

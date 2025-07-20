@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './header';
 import '../Style/viewProfile.css';
 import { authAPI } from '../Services/api';
@@ -7,6 +8,7 @@ const ViewProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -24,14 +26,23 @@ const ViewProfile = () => {
     fetchProfile();
   }, []);
 
+  const handleEditProfile = () => {
+    navigate('/update-profile');
+  };
+
   return (
     <div className="view-profile-page">
       <Header />
       <div className="view-profile-container">
         <div className="view-profile-card">
-          <h2 className="view-profile-title">
-            <span className="title-icon">👤</span> Your Account Details
-          </h2>
+          <div className="view-profile-header">
+            <h2 className="view-profile-title">
+              <span className="title-icon">👤</span> Your Account Details
+            </h2>
+            <button className="edit-profile-button" onClick={handleEditProfile}>
+              Edit Profile
+            </button>
+          </div>
 
           {loading && <div className="profile-loading">Loading your profile...</div>}
           {error && <div className="profile-error">{error}</div>}

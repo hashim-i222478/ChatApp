@@ -8,6 +8,7 @@ const chatRoutes = require('./Routes/chatRoutes');
 const ChatMessages = require('./Models/ChatMessages');
 const wss = require('./wsServer');
 const PrivateMessages = require('./Models/PrivateMessages');
+const PendingDelete = require('./Models/PendingDelete');
 
 dotenv.config();
 
@@ -121,6 +122,16 @@ wss.on('connection', (ws) => {
             await doc.save();
           }
         }
+        // --- Deliver and delete pending delete-for-everyone events ---
+        const pendingDeletes = await PendingDelete.find({ userId: parsed.userId });
+        for (const event of pendingDeletes) {
+          ws.send(JSON.stringify({
+            type: 'delete-message-for-everyone',
+            chatKey: event.chatKey,
+            timestamps: event.timestamps
+          }));
+        }
+        await PendingDelete.deleteMany({ userId: parsed.userId });
         return;
       }
 
@@ -172,6 +183,50 @@ wss.on('connection', (ws) => {
         // Do NOT store in DB here if offline
         // Echo back to sender for their chat window
         ws.send(JSON.stringify(payload));
+        return;
+      }
+
+      // Handle delete-message-for-everyone event
+      if (parsed.type === 'delete-message-for-everyone') {
+        console.log('Server received delete-message-for-everyone:', parsed);
+        const { chatKey, timestamps } = parsed;
+        // Support both chat_<idA>_<idB> and chat_<userId> formats
+        const match = chatKey.match(/^chat_(.+)_(.+)$/);
+        if (match) {
+          const [_, idA, idB] = match;
+          [idA, idB].forEach(async userId => {
+            const user = onlineUsers.get(userId);
+            if (user && user.ws && user.ws.readyState === WebSocket.OPEN) {
+              console.log('Relaying delete-message-for-everyone to user:', userId);
+              user.ws.send(JSON.stringify({
+                type: 'delete-message-for-everyone',
+                chatKey,
+                timestamps
+              }));
+            } else {
+              console.log('User offline, storing pending delete for:', userId);
+              await PendingDelete.create({ userId, chatKey, timestamps });
+            }
+          });
+        } else {
+          // Support chat_<userId> format
+          const matchSingle = chatKey.match(/^chat_(\d+)$/);
+          if (matchSingle) {
+            const userId = matchSingle[1];
+            const user = onlineUsers.get(userId);
+            if (user && user.ws && user.ws.readyState === WebSocket.OPEN) {
+              console.log('Relaying delete-message-for-everyone to user:', userId);
+              user.ws.send(JSON.stringify({
+                type: 'delete-message-for-everyone',
+                chatKey,
+                timestamps
+              }));
+            } else {
+              console.log('User offline, storing pending delete for:', userId);
+              await PendingDelete.create({ userId, chatKey, timestamps });
+            }
+          }
+        }
         return;
       }
     } catch (e) {

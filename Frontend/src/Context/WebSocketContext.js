@@ -44,13 +44,55 @@ export const WebSocketProvider = ({ username, children }) => {
             if (!exists) {
               current.push({
                 fromUserId: message.fromUserId,
+                username: message.fromUsername,
                 message: message.message,
-                time: message.time ? new Date(message.time).toLocaleTimeString() : ''
+                time: message.time ? new Date(message.time).toLocaleTimeString() : '',
+                file: message.file,
+                filename: message.filename
               });
               localStorage.setItem(chatKey, JSON.stringify(current));
               window.dispatchEvent(new CustomEvent('message-received', { detail: { chatKey } }));
             }
+            // --- Notification logic ---
+            const currentPath = window.location.pathname;
+            const expectedPath = `/private-chat/${message.fromUserId}`;
+            if (currentPath !== expectedPath) {
+              let unread = JSON.parse(localStorage.getItem('unread_private') || '{}');
+              unread[message.fromUserId] = (unread[message.fromUserId] || 0) + 1;
+              localStorage.setItem('unread_private', JSON.stringify(unread));
+              window.dispatchEvent(new CustomEvent('unread-updated'));
+            }
           }
+        }
+        if (message.type === 'delete-message-for-everyone') {
+          console.log('Delete message for everyone:', message);
+          const { chatKey, timestamps } = message;
+          // Try to delete from both possible keys
+          const myUserId = localStorage.getItem('userId');
+          // Try chatKey as is
+          let keysToTry = [chatKey];
+          // If chatKey is chat_<otherUserId>, also try chat_<myUserId>
+          const match = chatKey.match(/^chat_(\d+)$/);
+          if (match) {
+            const otherUserId = match[1];
+            if (otherUserId !== myUserId) {
+              keysToTry.push(`chat_${myUserId}`);
+            }
+          }
+          // If chatKey is chat_<idA>_<idB>, try both
+          const matchPair = chatKey.match(/^chat_(\d+)_(\d+)$/);
+          if (matchPair) {
+            const [_, idA, idB] = matchPair;
+            keysToTry = [`chat_${idA}_${idB}`];
+          }
+          keysToTry.forEach(key => {
+            const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+            const updated = msgs.filter(msg =>
+              !timestamps.includes(isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString())
+            );
+            localStorage.setItem(key, JSON.stringify(updated));
+            window.dispatchEvent(new CustomEvent('message-received', { detail: { chatKey: key } }));
+          });
         }
         if (message.type === 'profile-update') {
           // Update all localStorage chat histories for this userId

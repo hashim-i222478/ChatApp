@@ -382,3 +382,301 @@
 .hero-button-primary:hover {
   background: linear-gradient(90deg, #9333ea 0%, #2563eb 100%);
 }
+
+/* Notification Panel Styles */
+.home-notification-panel {
+  position: fixed;
+  top: 2.5rem;
+  right: 2.5rem;
+  background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%);
+  color: #6b21a8;
+  padding: 1.25rem 1.5rem 1.5rem 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 6px 24px rgba(147, 51, 234, 0.10);
+  min-width: 320px;
+  max-width: 360px;
+  z-index: 2000;
+  font-weight: 500;
+  font-size: 1.08rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: fadeIn 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.home-notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.home-notification-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #9333ea;
+}
+
+.home-notification-clear {
+  background: none;
+  border: none;
+  color: #9333ea;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.7rem;
+  transition: background 0.15s;
+}
+.home-notification-clear:hover {
+  background: #ede9fe;
+}
+
+.home-notification-message {
+  background: #f3f4f6;
+  color: #6b21a8;
+  border-radius: 0.5rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.2rem;
+  font-size: 1rem;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.04);
+}
+
+.home-notification-username {
+  color: #9333ea;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .home-notification-panel {
+    right: 1rem;
+    top: 1rem;
+    min-width: 220px;
+    max-width: 95vw;
+    padding: 1rem 0.7rem 1.2rem 0.7rem;
+  }
+  .home-notification-sidebar {
+    width: 80vw;
+    min-width: 0;
+    padding: 1.2rem 0.7rem 1rem 0.7rem;
+    font-size: 0.98rem;
+  }
+  .home-notification-sidebar-title {
+    font-size: 1.1rem;
+  }
+  .home-notification-sidebar-clear {
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+  }
+  .home-notification-bell {
+    right: 0.7rem;
+    top: 0.7rem;
+    width: 38px;
+    height: 38px;
+    font-size: 1.3rem;
+  }
+  .home-notification-badge {
+    width: 15px;
+    height: 15px;
+    font-size: 0.75rem;
+    top: 2px;
+    right: 2px;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-notification-sidebar {
+    width: 100vw;
+    min-width: 0;
+    padding: 1rem 0.3rem 0.7rem 0.3rem;
+    font-size: 0.95rem;
+    border-radius: 0;
+  }
+  .home-notification-sidebar-title {
+    font-size: 1rem;
+  }
+  .home-notification-sidebar-clear {
+    font-size: 0.9rem;
+    padding: 0.45rem 0.7rem;
+  }
+  .home-notification-bell {
+    right: 0.3rem;
+    top: 0.3rem;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
+  .home-notification-badge {
+    width: 11px;
+    height: 11px;
+    font-size: 0.6rem;
+    top: 0px;
+    right: 0px;
+  }
+}
+
+.home-notification-panel-appear {
+  animation: notificationIn 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.home-notification-panel-exit {
+  animation: notificationOut 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+
+@keyframes notificationIn {
+  from {
+    opacity: 0;
+    transform: translateX(60px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+@keyframes notificationOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(60px) scale(0.98);
+  }
+}
+
+/* Notification Bell Icon */
+.home-notification-bell {
+  position: fixed;
+  top: 2.5rem;
+  right: 2.5rem;
+  background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%);
+  color: #9333ea;
+  border: none;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  box-shadow: 0 4px 16px rgba(147, 51, 234, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 2100;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+.home-notification-bell:hover, .home-notification-bell:focus {
+  background: linear-gradient(90deg, #9333ea 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(147, 51, 234, 0.18);
+}
+
+.home-notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #9333ea;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.12);
+  z-index: 1;
+}
+
+/* Notification Sidebar */
+.home-notification-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 350px;
+  max-width: 95vw;
+  background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%);
+  box-shadow: -4px 0 24px rgba(147, 51, 234, 0.10);
+  z-index: 2200;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  animation: sidebarIn 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.home-notification-sidebar-exit {
+  animation: sidebarOut 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes sidebarIn {
+  from { transform: translateX(100%); opacity: 0.7; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes sidebarOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0.7; }
+}
+
+.home-notification-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.2rem;
+}
+.home-notification-sidebar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #9333ea;
+}
+.home-notification-sidebar-close {
+  background: none;
+  border: none;
+  color: #9333ea;
+  font-size: 1.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.7rem;
+  transition: background 0.15s;
+}
+.home-notification-sidebar-close:hover {
+  background: #ede9fe;
+}
+
+.home-notification-sidebar-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.home-notification-sidebar-message {
+  background: #f3f4f6;
+  color: #6b21a8;
+  border-radius: 0.5rem;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.04);
+}
+
+.home-notification-sidebar-username {
+  color: #9333ea;
+  font-weight: 700;
+}
+
+.home-notification-sidebar-clear {
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  margin-top: 1.2rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.home-notification-sidebar-clear:hover {
+  background: linear-gradient(90deg, #9333ea 0%, #2563eb 100%);
+}
