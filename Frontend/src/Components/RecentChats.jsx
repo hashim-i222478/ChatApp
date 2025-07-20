@@ -3,54 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Header from './header';
 import '../Style/recentChats.css';
 
-// ChatItem component for rendering individual recent chat entries
-const ChatItem = ({ chat, handleChatClick }) => (
-  <li
-    className="chat-item"
-    onClick={() => handleChatClick(chat)}
-    title={`Continue chat with ${chat.username}`}
-  >
-    <div className="user-avatar">
-      <div className="initial-circle">{chat.username[0].toUpperCase()}</div>
-    </div>
-    <div className="user-details">
-      <span className="username">{chat.username}</span>
-      <span className="userid">ID: {chat.userId}</span>
-      <div className="last-message-preview">
-        {chat.lastMessage ? (
-          <>
-            <span className="message-text">
-              {chat.lastMessage.length > 32
-                ? chat.lastMessage.slice(0, 32) + '...'
-                : chat.lastMessage}
-            </span>
-            <span className="message-time">
-              {chat.lastMessageTime
-                ? new Date(chat.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : ''}
-            </span>
-          </>
-        ) : (
-          <span className="no-message">No messages yet.</span>
-        )}
-      </div>
-    </div>
-    {chat.unreadCount > 0 && (
-      <span className="unread-count">{chat.unreadCount}</span>
-    )}
-  </li>
-);
-
-// EmptyState component for when no chats are available
-const EmptyState = () => (
-  <li className="no-chats">No recent chats.</li>
-);
-
-// LoadingState component for loading state
-const LoadingState = () => (
-  <li className="loading-chats">Loading...</li>
-);
-
 // Helper to safely parse date strings
 function getValidDateString(time) {
   if (!time) return '';
@@ -68,26 +20,25 @@ const RecentChats = () => {
     setLoading(true);
     const unread = JSON.parse(localStorage.getItem('unread_private') || '{}');
     const chats = [];
+    const userIdSet = new Set();
     for (let key in localStorage) {
       if (key.startsWith('chat_')) {
-        const userId = key.replace('chat_', '');
-        if (userId === myUserId) continue;
+        // Extract both user IDs from the key
+        const ids = key.replace('chat_', '').split('_');
+        const otherUserId = ids.find(id => id !== myUserId);
+        if (!otherUserId) continue;
+        if (userIdSet.has(otherUserId)) continue; // Avoid duplicates
+        userIdSet.add(otherUserId);
         const msgs = JSON.parse(localStorage.getItem(key) || '[]');
         if (msgs.length === 0) continue;
         // Find last message
         const lastMsg = msgs[msgs.length - 1];
-        // Find username (from last message with username or fromUsername, fallback to userId)
-        let username = userId;
-        for (let i = msgs.length - 1; i >= 0; i--) {
-          if (msgs[i].username) { username = msgs[i].username; break; }
-          if (msgs[i].fromUsername) { username = msgs[i].fromUsername; break; }
-        }
         chats.push({
-          userId,
-          username,
+          userId: otherUserId,
+          username: otherUserId, // Placeholder, will fetch real username below
           lastMessage: lastMsg.message || '',
           lastMessageTime: getValidDateString(lastMsg.time),
-          unreadCount: unread[userId] || 0
+          unreadCount: unread[otherUserId] || 0
         });
       }
     }
@@ -97,11 +48,82 @@ const RecentChats = () => {
     setLoading(false);
   }, [myUserId]);
 
+  // Fetch usernames for all recent chats
+  useEffect(() => {
+    const fetchUsernames = async () => {
+      const token = localStorage.getItem('token');
+      const updatedChats = await Promise.all(
+        recentChats.map(async (chat) => {
+          try {
+            const res = await fetch(`http://localhost:8080/api/users/username/${chat.userId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch username');
+            const data = await res.json();
+            return { ...chat, username: data.username || chat.userId };
+          } catch {
+            return chat;
+          }
+        })
+      );
+      setRecentChats(updatedChats);
+    };
+    if (recentChats.length > 0) fetchUsernames();
+  }, [recentChats.length]);
+
   const handleChatClick = (chat) => {
     navigate(`/private-chat/${chat.userId}`, {
       state: { username: chat.username, userId: chat.userId }
     });
   };
+
+  // ChatItem component for rendering individual recent chat entries
+  const ChatItem = ({ chat, handleChatClick }) => (
+    <li
+      className="chat-item"
+      onClick={() => handleChatClick(chat)}
+      title={`Continue chat with ${chat.username}`}
+    >
+      <div className="user-avatar">
+        <div className="initial-circle">{chat.username[0] ? chat.username[0].toUpperCase() : '?'}</div>
+      </div>
+      <div className="user-details">
+        <span className="username">{chat.username}</span>
+        <span className="userid">ID: {chat.userId}</span>
+        <div className="last-message-preview">
+          {chat.lastMessage ? (
+            <>
+              <span className="message-text">
+                {chat.lastMessage.length > 32
+                  ? chat.lastMessage.slice(0, 32) + '...'
+                  : chat.lastMessage}
+              </span>
+              <span className="message-time">
+                {chat.lastMessageTime
+                  ? new Date(chat.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : ''}
+              </span>
+            </>
+          ) : (
+            <span className="no-message">No messages yet.</span>
+          )}
+        </div>
+      </div>
+      {chat.unreadCount > 0 && (
+        <span className="unread-count">{chat.unreadCount}</span>
+      )}
+    </li>
+  );
+
+  // EmptyState component for when no chats are available
+  const EmptyState = () => (
+    <li className="no-chats">No recent chats.</li>
+  );
+
+  // LoadingState component for loading state
+  const LoadingState = () => (
+    <li className="loading-chats">Loading...</li>
+  );
 
   return (
     <div className="recent-chats-page">

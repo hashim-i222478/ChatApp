@@ -61,7 +61,8 @@ const PrivateChat = () => {
   const targetUserId = state?.userId || targetUserIdParam;
   const targetUsername = state?.username || 'User';
 
-  const chatKey = `chat_${targetUserId}`;
+  // Use a consistent chatKey for both users
+  const chatKey = `chat_${[myUserId, targetUserId].sort().join('_')}`;
 
   // Load local messages + fetch from DB if needed
   useEffect(() => {
@@ -203,18 +204,7 @@ const PrivateChat = () => {
       message: input
     }));
 
-    // Save to localStorage with ISO time
-    const time = new Date().toISOString();
-    const msgObj = {
-      fromUserId: myUserId,
-      message: input,
-      time
-    };
-    const current = JSON.parse(localStorage.getItem(chatKey) || '[]');
-    current.push(msgObj);
-    localStorage.setItem(chatKey, JSON.stringify(current));
-
-    setMessages(prev => [...prev, { from: 'me', text: input, time: new Date(time).toLocaleTimeString(), username: myUsername }]);
+    // Do NOT add the message to localStorage or UI here; let WebSocketContext handle it
     setInput('');
 
     // If user is offline, store in DB via HTTP

@@ -165,6 +165,8 @@ wss.on('connection', (ws) => {
         const sender = clients.get(ws);
         if (!sender) return;
         const { toUserId, message: privateMsg } = parsed;
+        const [idA, idB] = [sender.userId, toUserId].sort();
+        const chatKey = `chat_${idA}_${idB}`;
         const recipient = onlineUsers.get(toUserId);
         const time = new Date().toISOString();
         // Prepare payload for both sender and recipient
@@ -174,13 +176,13 @@ wss.on('connection', (ws) => {
           toUserId,
           fromUsername: sender.username,
           message: privateMsg,
-          time
+          time,
+          chatKey
         };
         if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
           // Recipient online: deliver instantly
           recipient.ws.send(JSON.stringify(payload));
         }
-        // Do NOT store in DB here if offline
         // Echo back to sender for their chat window
         ws.send(JSON.stringify(payload));
         return;
@@ -190,7 +192,7 @@ wss.on('connection', (ws) => {
       if (parsed.type === 'delete-message-for-everyone') {
         console.log('Server received delete-message-for-everyone:', parsed);
         const { chatKey, timestamps } = parsed;
-        // Support both chat_<idA>_<idB> and chat_<userId> formats
+        // chatKey is already in the correct format (chat_<idA>_<idB>)
         const match = chatKey.match(/^chat_(.+)_(.+)$/);
         if (match) {
           const [_, idA, idB] = match;
@@ -208,24 +210,6 @@ wss.on('connection', (ws) => {
               await PendingDelete.create({ userId, chatKey, timestamps });
             }
           });
-        } else {
-          // Support chat_<userId> format
-          const matchSingle = chatKey.match(/^chat_(\d+)$/);
-          if (matchSingle) {
-            const userId = matchSingle[1];
-            const user = onlineUsers.get(userId);
-            if (user && user.ws && user.ws.readyState === WebSocket.OPEN) {
-              console.log('Relaying delete-message-for-everyone to user:', userId);
-              user.ws.send(JSON.stringify({
-                type: 'delete-message-for-everyone',
-                chatKey,
-                timestamps
-              }));
-            } else {
-              console.log('User offline, storing pending delete for:', userId);
-              await PendingDelete.create({ userId, chatKey, timestamps });
-            }
-          }
         }
         return;
       }
