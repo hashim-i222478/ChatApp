@@ -1,14 +1,14 @@
 import React from "react";
-import { AiOutlineHome, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineUsergroupAdd, AiOutlineClockCircle, AiOutlineLogout } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout } from 'react-icons/ai';
 
 const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate }) => {
     const IconComponent = {
         'AiOutlineHome': AiOutlineHome,
+        'AiOutlineMessage': AiOutlineMessage,
         'AiOutlineGlobal': AiOutlineGlobal,
         'AiOutlineUser': AiOutlineUser,
         'AiOutlineEdit': AiOutlineEdit,
-        'AiOutlineUsergroupAdd': AiOutlineUsergroupAdd,
-        'AiOutlineClockCircle': AiOutlineClockCircle,
+        'AiOutlineTeam': AiOutlineTeam,
     };
 
     if (!isOpen) return null;

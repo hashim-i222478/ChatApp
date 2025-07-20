@@ -1,10 +1,10 @@
 import React from "react";
-import { AiOutlineHome, AiOutlineClockCircle, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout } from 'react-icons/ai';
 
 const Navbar = ({ navItems, location, navigate }) => {
     const IconComponent = {
         'AiOutlineHome': AiOutlineHome,
-        'AiOutlineClockCircle': AiOutlineClockCircle,
+        'AiOutlineMessage': AiOutlineMessage,
         'AiOutlineGlobal': AiOutlineGlobal,
         'AiOutlineUser': AiOutlineUser,
         'AiOutlineEdit': AiOutlineEdit,

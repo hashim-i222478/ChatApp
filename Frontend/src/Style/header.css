@@ -165,6 +165,242 @@
   transform: translateY(-2px);
 }
 
+.header-notification-bell {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.header-notification-bell:hover {
+  background: #e0e7ff;
+}
+
+.notification-icon {
+  font-size: 1.5rem;
+  color: #374151;
+}
+
+.header-notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(50%, -50%);
+}
+
+.mobile-menu-button-container {
+  display: none;
+}
+
+.mobile-menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-button:hover {
+  background: #e0e7ff;
+}
+
+.mobile-menu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #374151;
+}
+
+@media (max-width: 768px) {
+  .header {
+      padding: 1rem;
+  }
+
+  .mobile-menu-button-container {
+      display: block;
+  }
+
+  .header-actions {
+      gap: 1rem;
+  }
+}
+
+/* Notification Sidebar Styles */
+.header-notification-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 20rem;
+  height: 100vh;
+  background: linear-gradient(135deg, #dbeafe 0%, #ffffff 70%);
+  box-shadow: -2px 0 15px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  z-index: 1001;
+  border-radius: 1rem 0 0 1rem;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.header-notification-sidebar-exit {
+  animation: slideOutRight 0.3s ease-out forwards;
+}
+
+.header-notification-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-notification-sidebar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-notification-sidebar-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 0.25rem;
+  border-radius: 50%;
+}
+
+.header-notification-sidebar-close:hover {
+  color: #2563eb;
+  background: #e0e7ff;
+}
+
+.header-notification-sidebar-list {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.header-notification-sidebar-empty {
+  color: #6b7280;
+  text-align: center;
+  margin-top: 2rem;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.header-notification-sidebar-message {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.header-notification-sidebar-message:hover {
+  background: #f1f5f9;
+  transform: translateX(5px);
+}
+
+.header-notification-sidebar-username {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.header-notification-sidebar-clear {
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  color: #ffffff;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: none;
+  width: 100%;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.header-notification-sidebar-clear:hover {
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
+}
+
+.header-notification-panel-appear {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.header-notification-panel-exit {
+  animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: translateY(20px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+      opacity: 0;
+      transform: translateY(30px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+      transform: translateX(100%);
+  }
+  to {
+      transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+      transform: translateX(0);
+  }
+  to {
+      transform: translateX(100%);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+      opacity: 1;
+  }
+  to {
+      opacity: 0;
+  }
+}
 @media (max-width: 768px) {
   .desktop-nav {
       display: none;

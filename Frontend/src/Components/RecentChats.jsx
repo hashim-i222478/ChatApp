@@ -10,20 +10,40 @@ function getValidDateString(time) {
   return isNaN(d.getTime()) ? '' : d.toISOString();
 }
 
+// Helper to fetch usernames for a list of chats
+const fetchUsernames = async (chatsToUpdate, setChats) => {
+  const token = localStorage.getItem('token');
+  const updatedChats = await Promise.all(
+    chatsToUpdate.map(async (chat) => {
+      try {
+        const res = await fetch(`http://localhost:8080/api/users/username/${chat.userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch username');
+        const data = await res.json();
+        return { ...chat, username: data.username || chat.userId };
+      } catch {
+        return chat;
+      }
+    })
+  );
+  setChats(updatedChats);
+};
+
 const RecentChats = () => {
   const [recentChats, setRecentChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const myUserId = localStorage.getItem('userId');
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Helper to build and update recent chats, then fetch usernames
+  const buildAndSetRecentChats = (setChats) => {
     setLoading(true);
     const unread = JSON.parse(localStorage.getItem('unread_private') || '{}');
     const chats = [];
     const userIdSet = new Set();
     for (let key in localStorage) {
       if (key.startsWith('chat_')) {
-        // Extract both user IDs from the key
         const ids = key.replace('chat_', '').split('_');
         const otherUserId = ids.find(id => id !== myUserId);
         if (!otherUserId) continue;
@@ -31,45 +51,41 @@ const RecentChats = () => {
         userIdSet.add(otherUserId);
         const msgs = JSON.parse(localStorage.getItem(key) || '[]');
         if (msgs.length === 0) continue;
-        // Find last message
         const lastMsg = msgs[msgs.length - 1];
+        let lastMessageSender = lastMsg.username || lastMsg.fromUserId || '';
         chats.push({
           userId: otherUserId,
           username: otherUserId, // Placeholder, will fetch real username below
           lastMessage: lastMsg.message || '',
           lastMessageTime: getValidDateString(lastMsg.time),
+          lastMessageSender,
           unreadCount: unread[otherUserId] || 0
         });
       }
     }
-    // Sort by last message time descending
     chats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
-    setRecentChats(chats);
+    fetchUsernames(chats, setChats);
     setLoading(false);
-  }, [myUserId]);
+  };
 
-  // Fetch usernames for all recent chats
   useEffect(() => {
-    const fetchUsernames = async () => {
-      const token = localStorage.getItem('token');
-      const updatedChats = await Promise.all(
-        recentChats.map(async (chat) => {
-          try {
-            const res = await fetch(`http://localhost:8080/api/users/username/${chat.userId}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error('Failed to fetch username');
-            const data = await res.json();
-            return { ...chat, username: data.username || chat.userId };
-          } catch {
-            return chat;
-          }
-        })
-      );
-      setRecentChats(updatedChats);
+    buildAndSetRecentChats(setRecentChats);
+
+    const handleMessageReceived = () => {
+      buildAndSetRecentChats(setRecentChats);
     };
-    if (recentChats.length > 0) fetchUsernames();
-  }, [recentChats.length]);
+    const handleUnreadUpdated = () => {
+      buildAndSetRecentChats(setRecentChats);
+    };
+
+    window.addEventListener('message-received', handleMessageReceived);
+    window.addEventListener('unread-updated', handleUnreadUpdated);
+
+    return () => {
+      window.removeEventListener('message-received', handleMessageReceived);
+      window.removeEventListener('unread-updated', handleUnreadUpdated);
+    };
+  }, [myUserId]);
 
   const handleChatClick = (chat) => {
     navigate(`/private-chat/${chat.userId}`, {
@@ -94,6 +110,7 @@ const RecentChats = () => {
           {chat.lastMessage ? (
             <>
               <span className="message-text">
+                {chat.lastMessageSender ? `${chat.lastMessageSender}: ` : ''}
                 {chat.lastMessage.length > 32
                   ? chat.lastMessage.slice(0, 32) + '...'
                   : chat.lastMessage}
