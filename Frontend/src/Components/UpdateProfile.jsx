@@ -85,8 +85,9 @@ const UpdateProfile = () => {
 
       <div className="update-profile-wrapper">
         <div className="update-profile-card">
-          <h2>📝 Update Your Profile</h2>
-
+         
+          <h2>Update Your Profile</h2>
+          
           <p className="info-text">
             You can update your username and PIN here. If you don't want to change your PIN,
             just leave the PIN fields blank.

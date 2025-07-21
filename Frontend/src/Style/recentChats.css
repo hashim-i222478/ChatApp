@@ -27,6 +27,9 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .title-icon {
@@ -50,14 +53,19 @@
     align-items: center;
     gap: 1rem;
     padding: 1rem;
+    border: 1.5px solid #e0e7ff;
     border-radius: 0.75rem;
-    transition: all 0.2s ease;
+    background: #f8fafc;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.04);
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
     cursor: pointer;
 }
 
 .chat-item:hover {
-    background: #f3f4f6;
-    transform: translateY(-2px);
+    border-color: #6366f1;
+    background: #f1f5f9;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.10);
 }
 
 .user-avatar {

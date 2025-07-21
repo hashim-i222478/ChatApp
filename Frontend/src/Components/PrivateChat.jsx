@@ -318,24 +318,25 @@ const PrivateChat = () => {
       <div className="private-chat-container">
         <div className="chat-header">
           <h1 className="chat-title">Chat with <span>{targetUsername}</span></h1>
-          <button className="back-button" onClick={() => navigate(-1)}>Back</button>
-          {/* Selection mode button */}
-          <button className="select-messages-btn" onClick={handleToggleSelectionMode}>
-            {selectionMode ? 'Cancel Selection' : 'Select Messages'}
-          </button>
-          {/* Delete button, only show if one or more messages are selected */}
+          <div className="chat-header-actions">
           {selectedMessages.length > 0 && (
-            <button className="delete-selected-btn" title="Delete selected messages" onClick={() => setShowDeleteModal(true)}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M10 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M14 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M3 5H17" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M8 5V4C8 3.44772 8.44772 3 9 3H11C11.5523 3 12 3.44772 12 4V5" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                <rect x="4" y="5" width="12" height="11" rx="2" stroke="#dc2626" strokeWidth="2"/>
-              </svg>
+              <button className="delete-selected-btn" title="Delete selected messages" onClick={() => setShowDeleteModal(true)}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M10 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M14 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M3 5H17" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M8 5V4C8 3.44772 8.44772 3 9 3H11C11.5523 3 12 3.44772 12 4V5" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
+                  <rect x="4" y="5" width="12" height="11" rx="2" stroke="#dc2626" strokeWidth="2"/>
+                </svg>
+              </button>
+            )}
+            <button className="select-messages-btn" onClick={handleToggleSelectionMode}>
+              {selectionMode ? 'Cancel Selection' : 'Select Messages'}
             </button>
-          )}
+            <button className="back-button" onClick={() => navigate(-1)}>Back</button>
+            
+          </div>
         </div>
         {/* Delete modal */}
         {showDeleteModal && (

@@ -44,6 +44,7 @@
   max-width: 30rem;
   margin-left: auto;
   margin-right: auto;
+  margin-top: 1rem;
 }
 
 .home-cta {
@@ -165,13 +166,14 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-.modal-content {
+.modal-content-home {
   background: #ffffff;
-  padding: 2rem;
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
   border-radius: 1rem;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
-  width: 90%;
-  max-width: 25rem;
+  width: 98%;
+  max-width: 32rem;
+  min-width: 22rem;
   text-align: center;
   animation: slideInUp 0.3s ease-out;
 }
@@ -375,7 +377,7 @@
       grid-template-columns: 1fr;
   }
 
-  .modal-content {
+  .modal-content-home {
       padding: 1.5rem;
   }
 
@@ -426,7 +428,7 @@
       font-size: 0.875rem;
   }
 
-  .modal-content {
+  .modal-content-home {
       padding: 1rem;
   }
 
@@ -496,4 +498,134 @@
   to {
       opacity: 0;
   }
+}
+.home-user-id-box {
+  margin: 0.5rem 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 0.4em 1em;
+  color: #9333ea;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.06);
+}
+
+.home-user-id-label {
+  color: #2563eb;
+  font-weight: 700;
+  margin-right: 0.5em;
+}
+
+.home-user-id-value {
+  color: #9333ea;
+  font-weight: 700;
+  background: #e0e7ff;
+  border-radius: 6px;
+  padding: 0.15em 0.7em;
+  font-size: 1.15em;
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  width: 1ch;
+  animation: blink 1s steps(1) infinite;
+  color: #2563eb;
+  font-weight: 700;
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.copy-id-btn {
+  background: #e0e7ff;
+  border: none;
+  border-radius: 5px;
+  padding: 0.2em 0.5em;
+  cursor: pointer;
+  font-size: 1.1em;
+  margin-left: 0.5em;
+  transition: background 0.2s;
+}
+.copy-id-btn:hover {
+  background: #c7d2fe;
+}
+.copy-feedback {
+  margin-left: 0.5em;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 1em;
+  animation: fadeIn 0.3s, fadeOut 0.3s 0.9s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.modal-info {
+  text-align: left;
+  margin-bottom: 1.2em;
+  background: #f3f4f6;
+  border-radius: 0.5em;
+  padding: 1em 1.2em;
+  font-size: 1em;
+  color: #374151;
+}
+.modal-info ul {
+  margin: 0.5em 0 0 1.2em;
+  padding: 0;
+  list-style: none;
+}
+.modal-info li {
+  margin-bottom: 0.5em;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  font-size: 0.98em;
+}
+.modal-info li svg {
+  flex-shrink: 0;
+  margin-right: 0.5em;
+  margin-top: 0.1em;
+}
+.modal-info strong {
+  color: #2563eb;
+}
+
+.mobile-menu-close-btn {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(220,38,38,0.08);
+}
+.mobile-menu-close-btn:hover, .mobile-menu-close-btn:focus {
+  background: #fee2e2;
+  box-shadow: 0 4px 16px rgba(220,38,38,0.15);
+}
+.mobile-menu-close-btn svg {
+  font-size: 1.15rem;
+  color: #dc2626;
+  transition: color 0.2s;
+}
+.mobile-menu-close-btn:hover svg, .mobile-menu-close-btn:focus svg {
+  color: #b91c1c;
 }

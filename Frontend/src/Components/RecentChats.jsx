@@ -148,7 +148,7 @@ const RecentChats = () => {
       <div className="recent-chats-container">
         <div className="recent-chats-card">
           <h2 className="recent-chats-title">
-            <span className="title-icon">🕒</span> Recent Chats
+            <span className="title-icon"></span> Recent Chats
           </h2>
           <p className="recent-chats-subtitle">
             Access all your past private conversations.

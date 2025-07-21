@@ -37,7 +37,7 @@ const ViewProfile = () => {
         <div className="view-profile-card">
           <div className="view-profile-header">
             <h2 className="view-profile-title">
-              <span className="title-icon">👤</span> Your Account Details
+              <span className="title-icon"></span> Your Account Details
             </h2>
             <button className="edit-profile-button" onClick={handleEditProfile}>
               Edit Profile
@@ -61,7 +61,7 @@ const ViewProfile = () => {
               </div>
 
               <div className="profile-section">
-                <h3 className="section-title">💡 About this Profile</h3>
+                <h3 className="section-title">About this Profile</h3>
                 <p className="section-text">
                   This account is uniquely identified by your <strong>User ID</strong>. 
                   Share it with others to connect and chat in real-time on RealTalk.
@@ -69,7 +69,7 @@ const ViewProfile = () => {
               </div>
 
               <div className="profile-section">
-                <h3 className="section-title">🔒 Security Tips</h3>
+                <h3 className="section-title">Security Tips</h3>
                 <ul className="security-tips">
                   <li>Keep your 4-digit PIN private.</li>
                   <li>Use the "Update Profile" option to change your username anytime.</li>

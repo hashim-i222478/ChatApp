@@ -68,10 +68,32 @@ export const WebSocketProvider = ({ username, children }) => {
           const { chatKey, timestamps } = message;
           // chatKey is already in the correct format (chat_<idA>_<idB>)
           const msgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+          // Remove messages whose time matches any in timestamps
           const updated = msgs.filter(msg =>
             !timestamps.includes(isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString())
           );
           localStorage.setItem(chatKey, JSON.stringify(updated));
+          // --- Fix: Update unread count for this chat ---
+          let unread = JSON.parse(localStorage.getItem('unread_private') || '{}');
+          // Extract the other userId from the chatKey
+          const myUserId = localStorage.getItem('userId');
+          const match = chatKey.match(/^chat_(.+)_(.+)$/);
+          let otherUserId = null;
+          if (match) {
+            const [_, idA, idB] = match;
+            otherUserId = idA === myUserId ? idB : idA;
+          }
+          if (otherUserId && unread[otherUserId]) {
+            // Recalculate unread count: count only messages from 'them' that are still present
+            const remainingUnread = updated.filter(msg => msg.fromUserId === otherUserId).length;
+            if (remainingUnread === 0) {
+              delete unread[otherUserId];
+            } else {
+              unread[otherUserId] = remainingUnread;
+            }
+            localStorage.setItem('unread_private', JSON.stringify(unread));
+            window.dispatchEvent(new CustomEvent('unread-updated'));
+          }
           window.dispatchEvent(new CustomEvent('message-received', { detail: { chatKey } }));
         }
         if (message.type === 'profile-update') {

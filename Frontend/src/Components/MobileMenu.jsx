@@ -1,5 +1,5 @@
 import React from "react";
-import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout, AiOutlineClose } from 'react-icons/ai';
 
 const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate }) => {
     const IconComponent = {
@@ -15,6 +15,14 @@ const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate })
 
     return (
         <div className="mobile-menu-overlay">
+            <button
+                className="mobile-menu-close-btn"
+                onClick={onClose}
+                title="Close menu"
+                style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', cursor: 'pointer', zIndex: 10 }}
+            >
+                <AiOutlineClose style={{ fontSize: '2rem', color: '#374151' }} />
+            </button>
             <div className="mobile-menu">
                 <nav className="nav mobile-nav">
                     {navItems.map((item) => {

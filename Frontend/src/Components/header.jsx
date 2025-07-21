@@ -22,6 +22,12 @@ const Header = () => {
     const token = localStorage.getItem('token');
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('You must be logged in to access this page.');
+            navigate('/login');
+            return;
+        }
         const updateUnread = () => {
             const data = JSON.parse(localStorage.getItem('unread_private') || '{}');
             setUnread(data);
