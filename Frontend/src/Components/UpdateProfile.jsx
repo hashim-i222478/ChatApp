@@ -9,6 +9,8 @@ const UpdateProfile = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +31,25 @@ const UpdateProfile = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('Profile picture must be less than 5MB.');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file.');
+        return;
+      }
+      setProfilePicture(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target.result);
+      reader.readAsDataURL(file);
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -85,6 +106,9 @@ const UpdateProfile = () => {
 
       <div className="update-profile-wrapper">
         <div className="update-profile-card">
+          <button className="back-button" onClick={() => navigate(-1)}>
+            ← Back
+          </button>
          
           <h2>Update Your Profile</h2>
           
@@ -92,6 +116,31 @@ const UpdateProfile = () => {
             You can update your username and PIN here. If you don't want to change your PIN,
             just leave the PIN fields blank.
           </p>
+
+          <div className="profile-picture-section">
+            <label className="profile-picture-label">Profile Picture:</label>
+            <div className="profile-picture-container">
+              <div className="profile-picture-preview">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Profile Preview" className="profile-preview-image" />
+                ) : (
+                  <div className="profile-picture-placeholder">
+                    <span>No image selected</span>
+                  </div>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureChange}
+                className="profile-picture-input"
+                id="profile-picture-input"
+              />
+              <label htmlFor="profile-picture-input" className="profile-picture-button">
+                Choose Image
+              </label>
+            </div>
+          </div>
 
           {loading && <p className="status loading">Processing...</p>}
           {message && <p className="status success">{message}</p>}

@@ -22,14 +22,15 @@
 .recent-chats-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #111827;
+    color: #1e293b;
     margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .title-icon {

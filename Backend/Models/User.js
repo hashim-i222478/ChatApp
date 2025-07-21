@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema({
   pin: {
     type: String, // hashed pin
     required: true
+  },
+  profilePic: {
+    type: String, // URL or base64 string
+    default: ''
   }
 }, { timestamps: true });
 

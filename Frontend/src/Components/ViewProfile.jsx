@@ -36,6 +36,7 @@ const ViewProfile = () => {
       <div className="view-profile-container">
         <div className="view-profile-card">
           <div className="view-profile-header">
+          
             <h2 className="view-profile-title">
               <span className="title-icon"></span> Your Account Details
             </h2>

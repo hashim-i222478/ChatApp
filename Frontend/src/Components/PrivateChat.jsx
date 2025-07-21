@@ -334,7 +334,7 @@ const PrivateChat = () => {
             <button className="select-messages-btn" onClick={handleToggleSelectionMode}>
               {selectionMode ? 'Cancel Selection' : 'Select Messages'}
             </button>
-            <button className="back-button" onClick={() => navigate(-1)}>Back</button>
+            <button className="back-button2" onClick={() => navigate(-1)}> ← Back</button>
             
           </div>
         </div>

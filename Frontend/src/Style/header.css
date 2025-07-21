@@ -23,6 +23,7 @@
 .logo {
   display: flex;
   align-items: center;
+
 }
 
 .logo-text {
@@ -39,6 +40,35 @@
 
 .logo:hover .logo-text {
   transform: scale(1.05);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.logo-container:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
+}
+
+.app-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .nav {
@@ -429,6 +459,15 @@
 
   .nav-icon {
       font-size: 1.125rem;
+  }
+
+  .app-logo {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .app-name {
+    font-size: 1.25rem;
   }
 }
 
