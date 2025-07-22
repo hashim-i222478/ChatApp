@@ -32,12 +32,7 @@ const Navbar = ({ navItems, location, navigate }) => {
                     </button>
                 );
             })}
-            <button
-                onClick={handleLogout}
-                className="nav-button logout-button"
-            >
-                <AiOutlineLogout className="nav-icon" />
-            </button>
+            
         </nav>
     );
 };

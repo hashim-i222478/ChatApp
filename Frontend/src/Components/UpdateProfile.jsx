@@ -11,6 +11,7 @@ const UpdateProfile = () => {
   const [error, setError] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [showSizeModal, setShowSizeModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +21,18 @@ const UpdateProfile = () => {
       try {
         const response = await authAPI.getProfile();
         setForm({ username: response.data.username, pin: '', confirmPin: '' });
+        if (response.data.userId) {
+          const token = localStorage.getItem('token');
+          try {
+            const picRes = await fetch(`http://localhost:5001/api/users/profile-pic/${response.data.userId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (picRes.ok) {
+              const picData = await picRes.json();
+              if (picData.profilePic) setPreviewUrl(picData.profilePic);
+            }
+          } catch {}
+        }
       } catch (err) {
         setError('Failed to fetch user info.');
       } finally {
@@ -36,8 +49,8 @@ const UpdateProfile = () => {
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        setError('Profile picture must be less than 5MB.');
+      if (file.size > 1024 * 1024) { // 1MB limit
+        setShowSizeModal(true);
         return;
       }
       if (!file.type.startsWith('image/')) {
@@ -73,7 +86,7 @@ const UpdateProfile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const updateData = { username: form.username };
+      const updateData = { username: form.username, profilePic: previewUrl || '' };
       if (form.pin) updateData.pin = form.pin;
 
       const res = await fetch('http://localhost:5001/api/users/update', {
@@ -102,6 +115,15 @@ const UpdateProfile = () => {
 
   return (
     <>
+      {showSizeModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3 className="modal-title">Image Too Large</h3>
+            <p className="modal-note">Profile picture must be less than 1MB.<br/>Please choose a smaller image.</p>
+            <button className="modal-button" onClick={() => setShowSizeModal(false)}>OK</button>
+          </div>
+        </div>
+      )}
       <Header />
 
       <div className="update-profile-wrapper">
@@ -139,6 +161,7 @@ const UpdateProfile = () => {
               <label htmlFor="profile-picture-input" className="profile-picture-button">
                 Choose Image
               </label>
+              <p className="profile-picture-note">Max size: 1MB. JPG/PNG only.</p>
             </div>
           </div>
 

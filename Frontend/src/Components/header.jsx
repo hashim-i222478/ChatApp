@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import Navbar from './Navbar';
 import MobileMenu from './MobileMenu';
-import { AiOutlineBell } from 'react-icons/ai';
+import { AiOutlineBell, AiOutlineUser, AiOutlineLogout } from 'react-icons/ai';
 import '../Style/header.css';
 
 const Header = () => {
@@ -129,7 +129,6 @@ const Header = () => {
         { path: '/', icon: 'AiOutlineHome', label: 'Home' },
         { path: '/recent-chats', icon: 'AiOutlineMessage', label: 'Recent Chats' },
         { path: '/chat', icon: 'AiOutlineGlobal', label: 'Global Chats' },
-        { path: '/profile', icon: 'AiOutlineUser', label: 'View Profile' },
         { path: '/online-users', icon: 'AiOutlineTeam', label: 'Online Users' },
     ];
 
@@ -166,6 +165,21 @@ const Header = () => {
                             <AiOutlineBell className="notification-icon" />
                             {unreadCount > 0 && <span className="header-notification-badge">{unreadCount}</span>}
                         </button>
+                        {/* Move Profile and Logout buttons here, using the same button components/styles as before */}
+                        <button
+                            className={`nav-button${location.pathname === '/profile' ? ' nav-button-active' : ''}`}
+                            onClick={() => navigate('/profile')}
+                            title="View Profile"
+                        >
+                            <span className="nav-icon"><AiOutlineUser /></span>
+                        </button>
+                        <button
+                            className={`nav-button logout-button${location.pathname === '/login' ? ' nav-button-active' : ''}`}
+                            onClick={handleLogout}
+                            title="Logout"
+                        >
+                            <span className="nav-icon"><AiOutlineLogout /></span>
+                        </button>
                         <div className="mobile-menu-button-container">
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -178,7 +192,7 @@ const Header = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                     )}
                                 </svg>
-                            </button>
+                            </button> 
                         </div>
                     </div>
                 </div>

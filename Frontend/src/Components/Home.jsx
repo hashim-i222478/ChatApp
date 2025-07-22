@@ -28,6 +28,8 @@ const Home = () => {
   const [animatedWelcome, setAnimatedWelcome] = useState('');
   const [copied, setCopied] = useState(false);
   const location = useLocation();
+  const [profilePicUrl, setProfilePicUrl] = useState('');
+
 
   useEffect(() => {
     if (!location.search.includes('reloaded=1')) {
@@ -39,7 +41,25 @@ const Home = () => {
   useEffect(() => {
     setUserId(localStorage.getItem('userId') || '');
     setUsername(localStorage.getItem('username') || '');
-  }, []);
+
+    async function fetchProfilePic() {
+      const token = localStorage.getItem('token');
+      if (token && userId) {
+        try {
+          const res = await fetch(`http://localhost:5001/api/users/profile-pic/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setProfilePicUrl(data.profilePic || '');
+          }
+        } catch (error) {
+          console.error('Failed to fetch profile picture:', error);
+        }
+      }
+    }
+    fetchProfilePic();
+  }, [profilePicUrl, userId]);
 
   // Typewriter effect for welcome message
   useEffect(() => {
@@ -93,8 +113,17 @@ const Home = () => {
       <Header />
       
       <div className="home-container">
-        <div className="home-hero">
+      <div className="home-hero">
           <h1 className="home-title">{animatedWelcome}<span className="typewriter-cursor">|</span></h1>
+          <div className="home-profile-pic">
+            {profilePicUrl ? (
+              <img src={profilePicUrl} alt={`${username}'s profile picture`} className="profile-pic" />
+            ) : (
+              <div className="profile-pic fallback-pic">
+                {username ? username.charAt(0).toUpperCase() : '?'}
+              </div>
+            )}
+          </div>
           <div className="home-user-id-box">
             <span className="home-user-id-label">Your ID:</span>
             <span className="home-user-id-value">{userId}</span>
@@ -112,7 +141,6 @@ const Home = () => {
             </button>
             {copied && <span className="copy-feedback">Copied!</span>}
           </div>
-          
           <p className="home-subtitle">Connect, Chat, and Collaborate in Real-Time</p>
           <button className="home-cta" onClick={handleStartChat}>
             <AiOutlineMessage className="cta-icon" /> Start Chatting Now

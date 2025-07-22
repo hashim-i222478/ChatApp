@@ -31,6 +31,8 @@ const SignUp = () => {
   const [showModal, setShowModal] = useState(false);
   const [newUserId, setNewUserId] = useState('');
   const [copied, setCopied] = useState(false);
+  const [profilePic, setProfilePic] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const navigate = useNavigate();
   
   // Check if user is already logged in
@@ -46,6 +48,25 @@ const SignUp = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Profile picture must be less than 5MB.');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file.');
+        return;
+      }
+      setProfilePic(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target.result);
+      reader.readAsDataURL(file);
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -68,6 +89,9 @@ const SignUp = () => {
 
     try {
       const { confirmPin, ...dataToSend } = formData;
+      if (previewUrl) {
+        dataToSend.profilePic = previewUrl;
+      }
       const response = await authAPI.register(dataToSend);
       setNewUserId(response.data.userId);
       setShowModal(true);
@@ -144,6 +168,30 @@ const SignUp = () => {
                 maxLength={4}
                 className="form-input"
               />
+            </div>
+            <div className="profile-picture-section">
+              <label className="profile-picture-label">Profile Picture:</label>
+              <div className="profile-picture-container">
+                <div className="profile-picture-preview">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Profile Preview" className="profile-preview-image" />
+                  ) : (
+                    <div className="profile-picture-placeholder">
+                      <span>No image selected</span>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePicChange}
+                  className="profile-picture-input"
+                  id="profile-picture-input"
+                />
+                <label htmlFor="profile-picture-input" className="profile-picture-button">
+                  Choose Image
+                </label>
+              </div>
             </div>
             <button type="submit" className="signup-button" disabled={loading}>
               {loading ? 'Signing up...' : 'Sign Up'}

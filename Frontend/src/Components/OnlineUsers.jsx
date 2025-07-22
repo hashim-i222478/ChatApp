@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from './header';
 
 // UserItem component for rendering individual user entries
-const UserItem = ({ user, myUserId, handleUserClick }) => {
+const UserItem = ({ user, myUserId, handleUserClick, profilePic }) => {
   const isSelf = user.userId === myUserId;
   
   return (
@@ -17,7 +17,11 @@ const UserItem = ({ user, myUserId, handleUserClick }) => {
     >
       <div className="user-avatar">
         <span className="online-dot"></span>
-        <div className="initial-circle">{user.username[0].toUpperCase()}</div>
+        {profilePic ? (
+          <img src={profilePic} alt={user.username} className="avatar-img" />
+        ) : (
+          <div className="initial-circle">{user.username[0].toUpperCase()}</div>
+        )}
       </div>
       <div className="user-details">
         <span className="username">{user.username}</span>
@@ -37,6 +41,7 @@ const OnlineUsers = () => {
   const { onlineUsers = [] } = useWebSocket();
   const navigate = useNavigate();
   const myUserId = localStorage.getItem('userId');
+  const [profilePics, setProfilePics] = React.useState({});
 
   const handleUserClick = (user) => {
     if (user.userId !== myUserId) {
@@ -45,6 +50,28 @@ const OnlineUsers = () => {
       });
     }
   };
+
+  React.useEffect(() => {
+    const fetchPics = async () => {
+      const token = localStorage.getItem('token');
+      const pics = {};
+      await Promise.all(
+        (onlineUsers || []).map(async (user) => {
+          try {
+            const res = await fetch(`http://localhost:5001/api/users/profile-pic/${user.userId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.profilePic) pics[user.userId] = data.profilePic;
+            }
+          } catch {}
+        })
+      );
+      setProfilePics(pics);
+    };
+    if (onlineUsers && onlineUsers.length > 0) fetchPics();
+  }, [onlineUsers]);
 
   return (
     <div className="online-users-page">
@@ -65,6 +92,7 @@ const OnlineUsers = () => {
                   user={user}
                   myUserId={myUserId}
                   handleUserClick={handleUserClick}
+                  profilePic={profilePics[user.userId]}
                 />
               ))
             ) : (

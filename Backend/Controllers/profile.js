@@ -5,7 +5,7 @@ const axios = require('axios');
 exports.UpdateUserProfile = async (req, res) => {
     try {
       const updates = {};
-      const allowedUpdates = ['username', 'pin'];
+      const allowedUpdates = ['username', 'pin', 'profilePic'];
       allowedUpdates.forEach(field => {
         if (req.body[field]) {
           updates[field] = req.body[field];
@@ -42,10 +42,26 @@ exports.UpdateUserProfile = async (req, res) => {
         message: 'Profile updated successfully',
         user: {
           userId: user.userId,
-          username: user.username
+          username: user.username,
+          profilePic: user.profilePic
         }
       });
     } catch (err) {
       res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
+
+// In your controller (e.g., ManageUsers.js or profile.js)
+exports.getProfilePic = async (req, res) => {
+  try {
+    const user = await User.findOne({ userId: req.params.userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ profilePic: user.profilePic || '' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// In your routes (e.g., userRoutes.js)

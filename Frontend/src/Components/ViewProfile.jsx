@@ -6,6 +6,7 @@ import { authAPI } from '../Services/api';
 
 const ViewProfile = () => {
   const [profile, setProfile] = useState(null);
+  const [profilePic, setProfilePic] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -17,6 +18,18 @@ const ViewProfile = () => {
       try {
         const response = await authAPI.getProfile();
         setProfile(response.data);
+        if (response.data.userId) {
+          const token = localStorage.getItem('token');
+          try {
+            const picRes = await fetch(`http://localhost:5001/api/users/profile-pic/${response.data.userId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (picRes.ok) {
+              const picData = await picRes.json();
+              if (picData.profilePic) setProfilePic(picData.profilePic);
+            }
+          } catch {}
+        }
       } catch (err) {
         setError('Failed to load profile.');
       } finally {
@@ -35,8 +48,16 @@ const ViewProfile = () => {
       <Header />
       <div className="view-profile-container">
         <div className="view-profile-card">
+           <div className="profile-pic-section">
+             {profilePic ? (
+               <img src={profilePic} alt="Profile" className="profile-pic-img" />
+             ) : (
+               <div className="profile-pic-placeholder">
+                 {profile && profile.username ? profile.username[0].toUpperCase() : "?"}
+               </div>
+             )}
+           </div>
           <div className="view-profile-header">
-          
             <h2 className="view-profile-title">
               <span className="title-icon"></span> Your Account Details
             </h2>

@@ -385,6 +385,52 @@
   color: #b91c1c;
 }
 
+/* Profile and Logout button styles */
+.header-profile-btn, .header-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 1rem;
+  margin-left: 1.1em;
+  margin-right: 0.2em;
+  padding: 0.3em 0.7em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.header-profile-btn:hover, .header-logout-btn:hover {
+  background: #f0f4fa;
+  color: #2563eb;
+}
+
+.header-profile-icon, .header-logout-icon {
+  margin-right: 0.4em;
+  vertical-align: middle;
+}
+
+.header-profile-label, .header-logout-label {
+  font-weight: 500;
+  font-size: 1em;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 700px) {
+  .header-profile-btn, .header-logout-btn {
+    font-size: 0.95rem;
+    padding: 0.2em 0.5em;
+    margin-left: 0.5em;
+  }
+  .header-profile-label, .header-logout-label {
+    display: none;
+  }
+  .header-profile-icon, .header-logout-icon {
+    margin-right: 0;
+  }
+}
+
 @media (max-width: 768px) {
   .header {
       padding: 0.75rem 1rem;

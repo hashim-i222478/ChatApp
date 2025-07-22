@@ -11,7 +11,7 @@ function generateUserId() {
 // Signup controller
 exports.signup = async (req, res) => {
   try {
-    const { username, pin } = req.body;
+    const { username, pin, profilePic } = req.body;
     if (!username || !pin || !/^\d{4}$/.test(pin)) {
       return res.status(400).json({ message: 'Username and 4-digit PIN are required.' });
     }
@@ -30,7 +30,7 @@ exports.signup = async (req, res) => {
     // Hash pin
     const hashedPin = await bcrypt.hash(pin, 10);
     // Create user
-    const user = new User({ userId, username, pin: hashedPin });
+    const user = new User({ userId, username, pin: hashedPin, profilePic: profilePic || '' });
     await user.save();
     res.status(201).json({ message: 'User registered successfully', userId });
   } catch (err) {

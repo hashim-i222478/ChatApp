@@ -10,7 +10,7 @@ function getValidDateString(time) {
   return isNaN(d.getTime()) ? '' : d.toISOString();
 }
 
-// Helper to fetch usernames for a list of chats
+// Helper to fetch usernames and profile pics for a list of chats
 const fetchUsernames = async (chatsToUpdate, setChats) => {
   const token = localStorage.getItem('token');
   const updatedChats = await Promise.all(
@@ -19,9 +19,23 @@ const fetchUsernames = async (chatsToUpdate, setChats) => {
         const res = await fetch(`http://localhost:8080/api/users/username/${chat.userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to fetch username');
-        const data = await res.json();
-        return { ...chat, username: data.username || chat.userId };
+        let username = chat.userId;
+        if (res.ok) {
+          const data = await res.json();
+          username = data.username || chat.userId;
+        }
+        // Fetch profile pic
+        let profilePic = '';
+        try {
+          const picRes = await fetch(`http://localhost:5001/api/users/profile-pic/${chat.userId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (picRes.ok) {
+            const picData = await picRes.json();
+            profilePic = picData.profilePic || '';
+          }
+        } catch {}
+        return { ...chat, username, profilePic };
       } catch {
         return chat;
       }
@@ -101,7 +115,11 @@ const RecentChats = () => {
       title={`Continue chat with ${chat.username}`}
     >
       <div className="user-avatar">
-        <div className="initial-circle">{chat.username[0] ? chat.username[0].toUpperCase() : '?'}</div>
+        {chat.profilePic ? (
+          <img src={chat.profilePic} alt={chat.username} className="avatar-img" />
+        ) : (
+          <div className="initial-circle">{chat.username[0] ? chat.username[0].toUpperCase() : '?'}</div>
+        )}
       </div>
       <div className="user-details">
         <span className="username">{chat.username}</span>
