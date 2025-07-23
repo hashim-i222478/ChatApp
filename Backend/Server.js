@@ -112,7 +112,10 @@ wss.on('connection', (ws) => {
               fromUserId: msg.from,
               toUserId: msg.to,
               message: msg.message,
-              time: msg.time instanceof Date ? msg.time.toISOString() : msg.time
+              time: msg.time instanceof Date ? msg.time.toISOString() : msg.time,
+              fileUrl: msg.fileUrl || null,
+              fileType: msg.fileType || null,
+              filename: msg.filename || null
             }));
           }
           // Remove delivered messages
@@ -165,7 +168,7 @@ wss.on('connection', (ws) => {
         // Find sender info
         const sender = clients.get(ws);
         if (!sender) return;
-        const { toUserId, message: privateMsg } = parsed;
+        const { toUserId, message: privateMsg, file, fileUrl, filename, fileType } = parsed;
         const [idA, idB] = [sender.userId, toUserId].sort();
         const chatKey = `chat_${idA}_${idB}`;
         const recipient = onlineUsers.get(toUserId);
@@ -178,7 +181,11 @@ wss.on('connection', (ws) => {
           fromUsername: sender.username,
           message: privateMsg,
           time,
-          chatKey
+          chatKey,
+          file: file || null,
+          fileUrl: fileUrl || null,
+          filename: filename || null,
+          fileType: fileType || null
         };
         if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
           // Recipient online: deliver instantly
@@ -274,6 +281,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/private-media', express.static(path.join(__dirname, 'uploads/private-media')));
 app.use('/api/users', userRoutes);
 app.use('/api/chats', chatRoutes);
 app.get('/', (req, res) => {

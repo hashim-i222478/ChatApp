@@ -5,9 +5,10 @@ import Header from './header';
 import '../Style/privateChat.css';
 import axios from 'axios';
 import { FaTrash, FaPaperPlane, FaSmile, FaPaperclip, FaArrowLeft, FaCheckSquare, 
-         FaTimes, FaUserAlt, FaExclamationTriangle, FaUserSecret } from 'react-icons/fa';
+         FaTimes, FaUserAlt, FaExclamationTriangle, FaUserSecret, FaFileAlt,
+         FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAudio, FaFileVideo } from 'react-icons/fa';
 
-const MessageItem = ({ msg }) => {
+const MessageItem = ({ msg, onMediaClick }) => {
   if (msg.system) {
     // Render a centered or styled system message
     return (
@@ -17,6 +18,64 @@ const MessageItem = ({ msg }) => {
       </div>
     );
   }
+
+  // --- Step 5: Media rendering logic ---
+  // Determine media source (base64 or URL)
+  let mediaSrc = null;
+  if (msg.file) {
+    mediaSrc = msg.file;
+  } else if (msg.fileUrl) {
+    mediaSrc = msg.fileUrl.startsWith('http') ? msg.fileUrl : `http://localhost:8080${msg.fileUrl}`;
+  }
+
+  // Render media based on fileType
+  let mediaElement = null;
+  if (mediaSrc && msg.fileType) {
+    if (msg.fileType.startsWith('image/')) {
+      mediaElement = (
+        <div style={{ cursor: 'pointer', display: 'inline-block' }} onClick={() => onMediaClick && onMediaClick(msg, mediaSrc)}>
+          <img src={mediaSrc} alt={msg.filename || 'image'} style={{ maxWidth: 180, maxHeight: 180, borderRadius: 8, marginTop: 8 }} />
+        </div>
+      );
+    } else if (msg.fileType.startsWith('video/')) {
+      mediaElement = (
+        <div style={{ cursor: 'pointer', display: 'inline-block' }} onClick={() => onMediaClick && onMediaClick(msg, mediaSrc)}>
+          <video src={mediaSrc} controls style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, marginTop: 8 }} />
+        </div>
+      );
+    } else if (msg.fileType.startsWith('audio/')) {
+      mediaElement = (
+        <div style={{ cursor: 'pointer', display: 'inline-block' }} onClick={() => onMediaClick && onMediaClick(msg, mediaSrc)}>
+          <audio src={mediaSrc} controls style={{ maxWidth: 220, marginTop: 8 }} />
+        </div>
+      );
+    } else {
+      // Select appropriate file icon based on file type
+      let FileIcon = FaFileAlt; // default icon
+      if (msg.fileType) {
+        if (msg.fileType.includes('pdf')) FileIcon = FaFilePdf;
+        else if (msg.fileType.includes('word') || msg.fileType.includes('doc')) FileIcon = FaFileWord;
+        else if (msg.fileType.includes('excel') || msg.fileType.includes('sheet') || msg.fileType.includes('xls')) FileIcon = FaFileExcel;
+        else if (msg.fileType.includes('image')) FileIcon = FaFileImage;
+        else if (msg.fileType.includes('audio')) FileIcon = FaFileAudio;
+        else if (msg.fileType.includes('video')) FileIcon = FaFileVideo;
+      }
+      
+      mediaElement = (
+        <a 
+          href={mediaSrc} 
+          download={msg.filename} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={`file-link ${msg.from === 'me' ? 'file-link-self' : ''}`}
+        >
+          <FileIcon style={{ marginRight: 8, fontSize: '1.2em' }} />
+          <span className="file-name">{msg.filename || 'Download file'}</span>
+        </a>
+      );
+    }
+  }
+
   return (
     <div className={`message-container ${msg.from === 'me' ? 'message-self' : 'message-other'}`}>
       <div className="message-bubble">
@@ -24,7 +83,10 @@ const MessageItem = ({ msg }) => {
           <span className="message-username">{msg.username}</span>
           <span className="message-time">[{msg.time}]</span>
         </div>
-        <p className="message-text">{msg.text}</p>
+        {/* Show text if present */}
+        {msg.text && msg.text.trim() !== '' && <p className="message-text">{msg.text}</p>}
+        {/* Show media if present */}
+        {mediaElement}
       </div>
     </div>
   );
@@ -58,6 +120,10 @@ const PrivateChat = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // --- Step 1: Media selection state ---
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
 
   const targetUserId = state?.userId || targetUserIdParam;
   const targetUsername = state?.username || 'User';
@@ -99,9 +165,13 @@ const PrivateChat = () => {
       }
       return {
         from: msg.fromUserId === myUserId ? 'me' : 'them',
-        text: msg.message,
+        text: msg.message || '',
         time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
-        username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername)
+        username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername),
+        file: msg.file || null,
+        fileUrl: msg.fileUrl || null,
+        fileType: msg.fileType || null,
+        filename: msg.filename || null
       };
     });
     setMessages(formatted);
@@ -121,9 +191,13 @@ const PrivateChat = () => {
           }
           return {
             from: msg.fromUserId === myUserId ? 'me' : 'them',
-            text: msg.message,
+            text: msg.message || '',
             time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
-            username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername)
+            username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername),
+            file: msg.file || null,
+            fileUrl: msg.fileUrl || null,
+            fileType: msg.fileType || null,
+            filename: msg.filename || null
           };
         });
         setMessages(formatted);
@@ -208,32 +282,70 @@ const PrivateChat = () => {
     }
   }, [targetUserId]);
 
+  // Utility: Convert file to base64 (for small files)
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && !selectedFile) return;
 
     const isUserOnline = onlineUsers.some(u => u.userId === targetUserId);
-    if (isUserOnline) {
-      console.log('User is online, sending message via WebSocket:', targetUserId);
+    let fileData = null;
+    let filename = null;
+    let fileType = null;
+    let fileUrl = null;
+
+    if (selectedFile) {
+      filename = selectedFile.name;
+      fileType = selectedFile.type;
+      if (isUserOnline) {
+        // For demo: send as base64 (for small files)
+        fileData = await fileToBase64(selectedFile);
+      } else {
+        // Placeholder: upload to backend (to be implemented in backend step)
+        // Here, just simulate upload and set fileUrl to filename
+        // In real code, use FormData and axios/fetch to upload
+        // Example:
+        // const formData = new FormData();
+        // formData.append('file', selectedFile);
+        // const res = await axios.post('http://localhost:8080/api/chats/private-messages/upload', formData, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        // fileUrl = res.data.url;
+        fileUrl = filename; // Placeholder
+      }
     }
-    else {
-      console.log('User is offline, will store in DB:', targetUserId);
-    }
-    // Always send via WebSocket
+
+    // Always send via WebSocket (for online delivery and sender echo)
     ws.current.send(JSON.stringify({
       type: 'private-message',
       toUserId: targetUserId,
-      message: input
+      message: input,
+      file: fileData, // base64 if online, null if offline
+      fileUrl: fileUrl, // null if online, url if offline
+      filename,
+      fileType
     }));
 
-    // Do NOT add the message to localStorage or UI here; let WebSocketContext handle it
     setInput('');
+    if (selectedFile && filePreview) URL.revokeObjectURL(filePreview);
+    setSelectedFile(null);
+    setFilePreview(null);
 
-    // If user is offline, store in DB via HTTP
+    // If user is offline, store in DB via HTTP (with file info)
     if (!isUserOnline) {
+      // Placeholder: send fileUrl, filename, fileType
       await axios.post('http://localhost:8080/api/chats/private-messages/send', {
         to: targetUserId,
-        message: input
+        message: input,
+        fileUrl,
+        filename,
+        fileType
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
@@ -334,6 +446,35 @@ const PrivateChat = () => {
     //setSelectedMessages([]);
   };
 
+  // --- Step 1: Handle file selection and preview ---
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedFile(file);
+    // Preview for images/videos/audio
+    if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+      const url = URL.createObjectURL(file);
+      setFilePreview(url);
+    } else {
+      setFilePreview(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (filePreview) URL.revokeObjectURL(filePreview);
+    setFilePreview(null);
+  };
+
+  const [mediaPreview, setMediaPreview] = useState(null); // {msg, src}
+
+  // Handler for media click
+  const handleMediaClick = (msg, src) => {
+    if (msg.fileType && (msg.fileType.startsWith('image/') || msg.fileType.startsWith('video/') || msg.fileType.startsWith('audio/'))) {
+      setMediaPreview({ msg, src });
+    }
+  };
+
   return (
     <div className="private-chat-page">
       <Header />
@@ -429,11 +570,78 @@ const PrivateChat = () => {
                   style={{ marginRight: 8 }}
                 />
               )}
-              <MessageItem msg={m} />
+              <MessageItem msg={m} onMediaClick={handleMediaClick} />
             </div>
           ))}
           {someoneTyping && <TypingIndicator username={someoneTyping} />}
         </div>
+        {/* Media Preview Modal */}
+        {mediaPreview && (
+          <div className="media-modal-overlay" onClick={() => setMediaPreview(null)}>
+            <div className="media-modal-content" onClick={e => e.stopPropagation()}>
+              <button className="media-modal-close" onClick={() => setMediaPreview(null)}>
+                <FaTimes />
+              </button>
+              
+              {mediaPreview.msg.fileType.startsWith('image/') && (
+                <img 
+                  src={mediaPreview.src} 
+                  alt={mediaPreview.msg.filename || 'preview'} 
+                  className="media-modal-image" 
+                  loading="lazy"
+                />
+              )}
+              
+              {mediaPreview.msg.fileType.startsWith('video/') && (
+                <video 
+                  src={mediaPreview.src} 
+                  controls 
+                  autoPlay 
+                  className="media-modal-video" 
+                />
+              )}
+              
+              {mediaPreview.msg.fileType.startsWith('audio/') && (
+                <audio 
+                  src={mediaPreview.src} 
+                  controls 
+                  autoPlay 
+                  className="media-modal-audio" 
+                />
+              )}
+              
+            </div>
+          </div>
+        )}
+        {/* --- Step 1: File preview UI --- */}
+        {selectedFile && (
+          <div className="media-preview-bar" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, background: '#f3f4f6', borderRadius: 8, padding: 8 }}>
+            {/* Preview for images/videos/audio */}
+            {filePreview && selectedFile.type.startsWith('image/') && (
+              <img src={filePreview} alt="preview" style={{ maxWidth: 80, maxHeight: 80, borderRadius: 8 }} />
+            )}
+            {filePreview && selectedFile.type.startsWith('video/') && (
+              <video src={filePreview} controls style={{ maxWidth: 120, maxHeight: 80, borderRadius: 8 }} />
+            )}
+            {filePreview && selectedFile.type.startsWith('audio/') && (
+              <audio src={filePreview} controls style={{ maxWidth: 120 }} />
+            )}
+            {/* For other files, show icon and filename */}
+            {!filePreview && (
+              <span style={{ fontWeight: 500, color: '#374151' }}>
+                <FaPaperclip style={{ marginRight: 6 }} />
+                {selectedFile.name}
+              </span>
+            )}
+            {/* File info */}
+            <span style={{ fontSize: '0.85rem', color: '#6b7280', marginLeft: 8 }}>
+              {selectedFile.type || 'Unknown type'} | {(selectedFile.size / 1024).toFixed(1)} KB
+            </span>
+            <button onClick={handleRemoveFile} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }} title="Remove file">
+              <FaTimes />
+            </button>
+          </div>
+        )}
         <div className="chat-input-container">
           <input
             type="text"
@@ -442,8 +650,16 @@ const PrivateChat = () => {
             onChange={handleInputChange}
             className="chat-input"
             onKeyDown={e => { if (e.key === 'Enter') handleSend(e); }}
+            style={{ flex: 1 }}
           />
-          
+          {/* --- Step 1: Hidden file input and trigger button --- */}
+          <input
+            type="file"
+            id="media-file-input"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+          />
           <button
             type="button"
             className="emoji-button"
@@ -453,23 +669,21 @@ const PrivateChat = () => {
           >
             <FaSmile />
           </button>
-          
-          <button 
-            onClick={handleSend} 
+          <button
+            type="button"
             className="Media-send-button"
-            title="Send media"
+            title="Attach media"
+            onClick={() => document.getElementById('media-file-input').click()}
           >
             <FaPaperclip />
           </button>
-          
-          <button 
-            onClick={handleSend} 
+          <button
+            onClick={handleSend}
             className="chat-send-button"
             title="Send message"
           >
             <FaPaperPlane />
           </button>
-          
           {showEmojiPicker && (
             <div className="emoji-picker-bar">
               {emojiList.map(emoji => (

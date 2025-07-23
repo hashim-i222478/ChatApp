@@ -48,6 +48,8 @@ export const WebSocketProvider = ({ username, children }) => {
               message: message.message,
               time: message.time ? new Date(message.time).toLocaleTimeString() : '',
               file: message.file,
+              fileUrl: message.fileUrl,
+              fileType: message.fileType,
               filename: message.filename
             });
             localStorage.setItem(chatKey, JSON.stringify(current));

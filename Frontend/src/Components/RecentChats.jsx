@@ -78,10 +78,24 @@ const RecentChats = () => {
         
         const lastMsg = msgs[msgs.length - 1];
         let lastMessageSender = lastMsg.username || lastMsg.fromUserId || '';
+        // Fix: Show media placeholder if last message is media
+        let lastMessage = lastMsg.message;
+        if (!lastMessage || lastMessage.trim() === '') {
+          if (lastMsg.fileType) {
+            if (lastMsg.fileType.startsWith('image/')) lastMessage = '📷 Photo';
+            else if (lastMsg.fileType.startsWith('video/')) lastMessage = '🎥 Video';
+            else if (lastMsg.fileType.startsWith('audio/')) lastMessage = '🎵 Audio';
+            else lastMessage = '📎 File';
+          } else if (lastMsg.fileUrl || lastMsg.file) {
+            lastMessage = '📎 File';
+          } else {
+            lastMessage = '';
+          }
+        }
         chats.push({
           userId: otherUserId,
           username: otherUserId, // Placeholder, will fetch real username below
-          lastMessage: lastMsg.message || '',
+          lastMessage,
           lastMessageTime: getValidDateString(lastMsg.time),
           lastMessageSender,
           unreadCount: unread[otherUserId] || 0

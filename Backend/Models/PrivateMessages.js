@@ -7,7 +7,10 @@ const PrivateMessageSchema = new mongoose.Schema({
       from: String,
       to: String,
       message: String,
-      time: { type: Date, default: Date.now }
+      time: { type: Date, default: Date.now },
+      fileUrl: String,
+      fileType: String,
+      filename: String
     }
   ]
 });

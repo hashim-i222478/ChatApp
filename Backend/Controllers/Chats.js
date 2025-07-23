@@ -43,10 +43,10 @@ exports.getPrivateChatHistory = async (req, res) => {
 exports.sendPrivateMessage = async (req, res) => {
     try {
         const from = req.user.userId; // from auth middleware
-        const { to, message } = req.body;
+        const { to, message, fileUrl, fileType, filename } = req.body;
 
-        if (!to || !message) {
-            return res.status(400).json({ message: 'Recipient and message are required.' });
+        if (!to || (!message && !fileUrl)) {
+            return res.status(400).json({ message: 'Recipient and message or file are required.' });
         }
 
         // Find or create the conversation document
@@ -58,7 +58,10 @@ exports.sendPrivateMessage = async (req, res) => {
             from,
             to,
             message,
-            time: new Date()
+            time: new Date(),
+            fileUrl: fileUrl || null,
+            fileType: fileType || null,
+            filename: filename || null
         };
 
         if (conversation) {
@@ -148,6 +151,21 @@ exports.getRecentPrivateChats = async (req, res) => {
     res.status(200).json(recentChats);
   } catch (error) {
     console.error('Error fetching recent private chats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Upload private media file
+exports.uploadPrivateMediaFile = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    // Return the file URL/path
+    const fileUrl = `/uploads/private-media/${req.file.filename}`;
+    res.status(201).json({ url: fileUrl, filename: req.file.originalname, fileType: req.file.mimetype });
+  } catch (error) {
+    console.error('Error uploading private media file:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
