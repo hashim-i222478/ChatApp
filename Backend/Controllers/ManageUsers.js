@@ -2,6 +2,8 @@ const User = require('../Models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const wss = require('../wsServer');
+const fs = require('fs');
+const path = require('path');
 
 // Helper to generate a random 9-digit userId
 function generateUserId() {
@@ -11,8 +13,8 @@ function generateUserId() {
 // Signup controller
 exports.signup = async (req, res) => {
   try {
-    const { username, pin, profilePic } = req.body;
-    if (!username || !pin || !/^\d{4}$/.test(pin)) {
+    const { username, pin } = req.body; // profilePic removed
+    if (!username || !pin || !/^[0-9]{4}$/.test(pin)) {
       return res.status(400).json({ message: 'Username and 4-digit PIN are required.' });
     }
     // Check if username already exists
@@ -29,8 +31,8 @@ exports.signup = async (req, res) => {
     }
     // Hash pin
     const hashedPin = await bcrypt.hash(pin, 10);
-    // Create user
-    const user = new User({ userId, username, pin: hashedPin, profilePic: profilePic || '' });
+    // Create user (profilePic will be set later via upload endpoint)
+    const user = new User({ userId, username, pin: hashedPin });
     await user.save();
     res.status(201).json({ message: 'User registered successfully', userId });
   } catch (err) {
@@ -38,6 +40,45 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// Profile picture upload controller
+exports.uploadProfilePic = async (req, res) => {
+  try {
+    const userId = req.body.userId; // or get from auth if protected
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    // Find user to get previous profile picture
+    const user = await User.findOne({ userId });
+    if (user && user.profilePic) {
+      // Delete previous profile picture
+      const prevPicPath = user.profilePic;
+      if (prevPicPath && prevPicPath.startsWith('/uploads/')) {
+        const filename = prevPicPath.split('/').pop();
+        const fullPath = path.join(__dirname, '..', 'uploads', filename);
+        
+        try {
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+            console.log(`Deleted previous profile picture: ${fullPath}`);
+          }
+        } catch (deleteErr) {
+          console.error('Error deleting previous profile picture:', deleteErr);
+          // Continue even if delete fails
+        }
+      }
+    }
+    
+    const profilePicUrl = `/uploads/${req.file.filename}`;
+    await User.findOneAndUpdate({ userId }, { profilePic: profilePicUrl });
+    res.status(200).json({ message: 'Profile picture uploaded', profilePic: profilePicUrl });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+
 
 // Login controller
 exports.login = async (req, res) => {

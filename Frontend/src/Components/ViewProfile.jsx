@@ -48,15 +48,19 @@ const ViewProfile = () => {
       <Header />
       <div className="view-profile-container">
         <div className="view-profile-card">
-           <div className="profile-pic-section">
-             {profilePic ? (
-               <img src={profilePic} alt="Profile" className="profile-pic-img" />
-             ) : (
-               <div className="profile-pic-placeholder">
-                 {profile && profile.username ? profile.username[0].toUpperCase() : "?"}
-               </div>
-             )}
-           </div>
+          <div className="profile-pic-section">
+            {profilePic ? (
+              <img
+                src={profilePic.startsWith('/uploads/') ? `http://localhost:8080${profilePic}` : profilePic}
+                alt="Profile"
+                className="profile-pic-img"
+              />
+            ) : (
+              <div className="profile-pic-placeholder">
+                {profile && profile.username ? profile.username[0].toUpperCase() : "?"}
+              </div>
+            )}
+          </div>
           <div className="view-profile-header">
             <h2 className="view-profile-title">
               <span className="title-icon"></span> Your Account Details

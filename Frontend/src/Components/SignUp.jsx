@@ -89,11 +89,20 @@ const SignUp = () => {
 
     try {
       const { confirmPin, ...dataToSend } = formData;
-      if (previewUrl) {
-        dataToSend.profilePic = previewUrl;
-      }
+      // Remove profilePic from registration request
       const response = await authAPI.register(dataToSend);
-      setNewUserId(response.data.userId);
+      const userId = response.data.userId;
+      // If a profile picture is selected, upload it
+      if (profilePic) {
+        const formDataPic = new FormData();
+        formDataPic.append('profilePic', profilePic);
+        formDataPic.append('userId', userId);
+        await fetch('http://localhost:8080/api/users/upload-profile-pic', {
+          method: 'POST',
+          body: formDataPic
+        });
+      }
+      setNewUserId(userId);
       setShowModal(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');

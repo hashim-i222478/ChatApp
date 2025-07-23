@@ -4,7 +4,8 @@ import { useWebSocket } from '../Context/WebSocketContext';
 import Header from './header';
 import '../Style/privateChat.css';
 import axios from 'axios';
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaPaperPlane, FaSmile, FaPaperclip, FaArrowLeft, FaCheckSquare, 
+         FaTimes, FaUserAlt, FaExclamationTriangle, FaUserSecret } from 'react-icons/fa';
 
 const MessageItem = ({ msg }) => {
   if (msg.system) {
@@ -60,9 +61,30 @@ const PrivateChat = () => {
 
   const targetUserId = state?.userId || targetUserIdParam;
   const targetUsername = state?.username || 'User';
+  const [profilePic, setProfilePic] = useState('');
 
   // Use a consistent chatKey for both users
   const chatKey = `chat_${[myUserId, targetUserId].sort().join('_')}`;
+
+  // Fetch profile picture for the target user
+  useEffect(() => {
+    const fetchProfilePic = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const picRes = await fetch(`http://localhost:5001/api/users/profile-pic/${targetUserId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (picRes.ok) {
+          const picData = await picRes.json();
+          setProfilePic(picData.profilePic || '');
+        }
+      } catch (error) {
+        console.log('Error fetching profile picture:', error);
+      }
+    };
+    
+    fetchProfilePic();
+  }, [targetUserId]);
 
   // Load local messages + fetch from DB if needed
   useEffect(() => {
@@ -317,37 +339,82 @@ const PrivateChat = () => {
       <Header />
       <div className="private-chat-container">
         <div className="chat-header">
-          <h1 className="chat-title">Chat with <span>{targetUsername}</span></h1>
+          <div className="chat-header-left">
+            <button className="back-button2" onClick={() => navigate(-1)} title="Go back">
+              <FaArrowLeft />
+            </button>
+            <div className="user-avatar-wrapper">
+              <div className="user-avatar">
+                {profilePic ? (
+                  <img 
+                    src={profilePic.startsWith('/uploads/') 
+                      ? `http://localhost:8080${profilePic}` 
+                      : profilePic} 
+                    alt={targetUsername} 
+                    className="avatar-img" 
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="initial-circle">{targetUsername[0] ? targetUsername[0].toUpperCase() : '?'}</div>
+                )}
+                {onlineUsers.some(u => u.userId === targetUserId) && (
+                  <span className="online-status-indicator"></span>
+                )}
+              </div>
+            </div>
+            <div className="user-details">
+              <h1 className="chat-title"><span>{targetUsername}</span></h1>
+              {someoneTyping ? (
+                <div className="typing-status">{someoneTyping} is typing...</div>
+              ) : (
+                <div className="user-status">
+                  {onlineUsers.some(u => u.userId === targetUserId) ? 'Online' : 'Offline'}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="chat-header-actions">
-          {selectedMessages.length > 0 && (
+            {selectedMessages.length > 0 && (
               <button className="delete-selected-btn" title="Delete selected messages" onClick={() => setShowDeleteModal(true)}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M10 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M14 8V14" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M3 5H17" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M8 5V4C8 3.44772 8.44772 3 9 3H11C11.5523 3 12 3.44772 12 4V5" stroke="#dc2626" strokeWidth="2" strokeLinecap="round"/>
-                  <rect x="4" y="5" width="12" height="11" rx="2" stroke="#dc2626" strokeWidth="2"/>
-                </svg>
+                <FaTrash />
+                <span className="button-text">{selectedMessages.length}</span>
               </button>
             )}
-            <button className="select-messages-btn" onClick={handleToggleSelectionMode}>
-              {selectionMode ? 'Cancel Selection' : 'Select Messages'}
+            <button 
+              className={`select-messages-btn ${selectionMode ? 'active' : ''}`} 
+              onClick={handleToggleSelectionMode}
+              title={selectionMode ? "Cancel selection" : "Select messages"}
+            >
+              {selectionMode ? <><FaTimes /><span className="button-text">Cancel</span></> : <><FaCheckSquare /><span className="button-text">Select</span></>}
             </button>
-            <button className="back-button2" onClick={() => navigate(-1)}> ← Back</button>
-            
           </div>
         </div>
         {/* Delete modal */}
         {showDeleteModal && (
           <div className="modal-overlay">
             <div className="modal-content">
-              <h3>Delete Message{selectedMessages.length > 1 ? 's' : ''}</h3>
-              <button className="modal-btn" onClick={handleDeleteForMe}>Delete for Me</button>
-              {allSelectedByMe && (
-                <button className="modal-btn" onClick={handleDeleteForEveryone}>Delete for Everyone</button>
-              )}
-              <button className="modal-btn" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <div className="modal-header">
+                <h3><FaExclamationTriangle className="modal-icon" /> Delete Message{selectedMessages.length > 1 ? 's' : ''}</h3>
+                <button className="modal-close" onClick={() => setShowDeleteModal(false)}>
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete {selectedMessages.length} message{selectedMessages.length > 1 ? 's' : ''}?</p>
+              </div>
+              <div className="modal-footer">
+                <button className="modal-btn cancel" onClick={() => setShowDeleteModal(false)}>
+                  <FaTimes /> Cancel
+                </button>
+                <button className="modal-btn delete-for-me" onClick={handleDeleteForMe}>
+                  <FaUserAlt /> Delete for Me
+                </button>
+                {allSelectedByMe && (
+                  <button className="modal-btn delete-for-everyone" onClick={handleDeleteForEveryone}>
+                    <FaUserSecret /> Delete for Everyone
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -367,7 +434,7 @@ const PrivateChat = () => {
           ))}
           {someoneTyping && <TypingIndicator username={someoneTyping} />}
         </div>
-        <div className="chat-input-container" style={{ position: 'relative' }}>
+        <div className="chat-input-container">
           <input
             type="text"
             placeholder="Type your message..."
@@ -376,14 +443,33 @@ const PrivateChat = () => {
             className="chat-input"
             onKeyDown={e => { if (e.key === 'Enter') handleSend(e); }}
           />
+          
           <button
             type="button"
             className="emoji-button"
             onClick={() => setShowEmojiPicker(v => !v)}
             aria-label="Add emoji"
+            title="Add emoji"
           >
-            <img src={require('../Style/image.png')} alt="emoji" style={{ width: 28, height: 28, display: 'block' }} />
+            <FaSmile />
           </button>
+          
+          <button 
+            onClick={handleSend} 
+            className="Media-send-button"
+            title="Send media"
+          >
+            <FaPaperclip />
+          </button>
+          
+          <button 
+            onClick={handleSend} 
+            className="chat-send-button"
+            title="Send message"
+          >
+            <FaPaperPlane />
+          </button>
+          
           {showEmojiPicker && (
             <div className="emoji-picker-bar">
               {emojiList.map(emoji => (
@@ -398,7 +484,6 @@ const PrivateChat = () => {
               ))}
             </div>
           )}
-          <button onClick={handleSend} className="chat-send-button" >➤</button>
         </div>
       </div>
     </div>

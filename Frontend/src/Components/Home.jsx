@@ -41,7 +41,9 @@ const Home = () => {
   useEffect(() => {
     setUserId(localStorage.getItem('userId') || '');
     setUsername(localStorage.getItem('username') || '');
+  }, []);
 
+  useEffect(() => {
     async function fetchProfilePic() {
       const token = localStorage.getItem('token');
       if (token && userId) {
@@ -58,8 +60,10 @@ const Home = () => {
         }
       }
     }
-    fetchProfilePic();
-  }, [profilePicUrl, userId]);
+    if (userId) {
+      fetchProfilePic();
+    }
+  }, [userId]);
 
   // Typewriter effect for welcome message
   useEffect(() => {
@@ -117,7 +121,7 @@ const Home = () => {
           <h1 className="home-title">{animatedWelcome}<span className="typewriter-cursor">|</span></h1>
           <div className="home-profile-pic">
             {profilePicUrl ? (
-              <img src={profilePicUrl} alt={`${username}'s profile picture`} className="profile-pic" />
+              <img src={profilePicUrl.startsWith('/uploads/') ? `http://localhost:8080${profilePicUrl}` : profilePicUrl} alt={`${username}'s profile picture`} className="profile-pic" />
             ) : (
               <div className="profile-pic fallback-pic">
                 {username ? username.charAt(0).toUpperCase() : '?'}

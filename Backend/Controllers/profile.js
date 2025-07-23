@@ -1,16 +1,56 @@
 const User = require('../Models/User');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 exports.UpdateUserProfile = async (req, res) => {
     try {
+      console.log('Update profile request received');
+      console.log('Request body:', req.body);
+      console.log('File upload:', req.file);
+      
       const updates = {};
       const allowedUpdates = ['username', 'pin', 'profilePic'];
+      
+      // Handle text-based updates
       allowedUpdates.forEach(field => {
         if (req.body[field]) {
           updates[field] = req.body[field];
         }
       });
+      
+      // Handle profile picture file upload
+      if (req.file) {
+        console.log('Processing uploaded file:', req.file.filename);
+        
+        // Get current user to find the previous profile picture
+        const currentUser = await User.findById(req.user._id);
+        
+        if (currentUser && currentUser.profilePic) {
+          // Extract filename from path
+          const prevPicPath = currentUser.profilePic;
+          if (prevPicPath && prevPicPath.startsWith('/uploads/')) {
+            const filename = prevPicPath.split('/').pop();
+            const fullPath = path.join(__dirname, '..', 'uploads', filename);
+            
+            // Delete the previous profile picture
+            try {
+              if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+                console.log(`Deleted previous profile picture: ${fullPath}`);
+              }
+            } catch (deleteErr) {
+              console.error('Error deleting previous profile picture:', deleteErr);
+              // Continue even if delete fails
+            }
+          }
+        }
+        
+        updates.profilePic = `/uploads/${req.file.filename}`;
+      } else {
+        console.log('No file was uploaded');
+      }
   
       // If pin is being updated, hash it
       if (updates.pin) {
@@ -63,5 +103,3 @@ exports.getProfilePic = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
-// In your routes (e.g., userRoutes.js)

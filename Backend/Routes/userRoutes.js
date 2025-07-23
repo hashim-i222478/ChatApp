@@ -1,7 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { signup, login, getuser, GetUserId, fetchUsername, getUserById} = require('../Controllers/ManageUsers');
+const multer = require('multer');
+const path = require('path');
+const { signup, login, getuser, GetUserId, fetchUsername, getUserById, uploadProfilePic } = require('../Controllers/ManageUsers');
 const verifyToken = require('../Middlewares/authMiddleware');
+
+// Set up storage for multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`);
+  }
+});
+const upload = multer({ storage: storage });
 
 // Public routes
 router.post('/register', signup);
@@ -12,5 +26,8 @@ router.get('/profile', verifyToken, getuser);
 router.get('/userId', verifyToken, GetUserId);
 router.get('/username/:userId',verifyToken, fetchUsername);
 router.get('/getUserById/:userId', verifyToken, getUserById);
+
+// Profile picture upload route
+router.post('/upload-profile-pic', upload.single('profilePic'), uploadProfilePic);
 
 module.exports = router;

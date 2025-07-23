@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import '../Style/onlineUsers.css';
 import { useWebSocket } from '../Context/WebSocketContext';
 import { useNavigate } from 'react-router-dom';
 import Header from './header';
+import { FaSearch, FaUserFriends, FaCircle, FaComments } from 'react-icons/fa';
 
 // UserItem component for rendering individual user entries
 const UserItem = ({ user, myUserId, handleUserClick, profilePic }) => {
@@ -18,7 +19,7 @@ const UserItem = ({ user, myUserId, handleUserClick, profilePic }) => {
       <div className="user-avatar">
         <span className="online-dot"></span>
         {profilePic ? (
-          <img src={profilePic} alt={user.username} className="avatar-img" />
+          <img src={profilePic.startsWith('/uploads/') ? `http://localhost:8080${profilePic}` : profilePic} alt={user.username} className="avatar-img" />
         ) : (
           <div className="initial-circle">{user.username[0].toUpperCase()}</div>
         )}
@@ -28,13 +29,24 @@ const UserItem = ({ user, myUserId, handleUserClick, profilePic }) => {
         <span className="userid">ID: {user.userId}</span>
         {isSelf && <span className="you-badge">You</span>}
       </div>
+      {!isSelf && (
+        <button className="chat-now-btn" onClick={() => handleUserClick(user)}>
+          <FaComments /> Chat
+        </button>
+      )}
     </li>
   );
 };
 
 // EmptyState component for when no users are online
 const EmptyState = () => (
-  <li className="no-users">No users online.</li>
+  <div className="no-users">
+    <div className="empty-icon">
+      <FaUserFriends />
+    </div>
+    <p>No users online at the moment.</p>
+    <p className="empty-subtitle">Check back later or refresh the page.</p>
+  </div>
 );
 
 const OnlineUsers = () => {
@@ -42,6 +54,8 @@ const OnlineUsers = () => {
   const navigate = useNavigate();
   const myUserId = localStorage.getItem('userId');
   const [profilePics, setProfilePics] = React.useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState([]);
 
   const handleUserClick = (user) => {
     if (user.userId !== myUserId) {
@@ -51,7 +65,20 @@ const OnlineUsers = () => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
+    // Filter users based on search term
+    if (searchTerm.trim() === '') {
+      setFilteredUsers(onlineUsers);
+    } else {
+      const filtered = onlineUsers.filter(user => 
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.userId.includes(searchTerm)
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [searchTerm, onlineUsers]);
+
+  useEffect(() => {
     const fetchPics = async () => {
       const token = localStorage.getItem('token');
       const pics = {};
@@ -78,27 +105,61 @@ const OnlineUsers = () => {
       <Header />
       <div className="online-users-container">
         <div className="online-users-card">
-          <h2 className="online-users-title">
-            <span className="title-icon">👥</span> Online Users
-          </h2>
-          <p className="online-users-subtitle">
-            Click on a user to start a private chat.
-          </p>
-          <ul className="online-users-list">
-            {onlineUsers && onlineUsers.length > 0 ? (
-              onlineUsers.map((user) => (
-                <UserItem
-                  key={user.userId}
-                  user={user}
-                  myUserId={myUserId}
-                  handleUserClick={handleUserClick}
-                  profilePic={profilePics[user.userId]}
-                />
-              ))
+          <div className="card-header">
+            <h2 className="online-users-title">
+              <FaUserFriends className="title-icon" /> Online Users
+            </h2>
+            <div className="online-count">
+              <FaCircle className="status-dot" />
+              <span>{onlineUsers.length} user{onlineUsers.length !== 1 ? 's' : ''} online</span>
+            </div>
+          </div>
+          
+          <div className="search-container">
+            <div className="search-input-wrapper">
+              <FaSearch className="search-icon" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button 
+                  className="clear-search" 
+                  onClick={() => setSearchTerm('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="users-list-container">
+            {filteredUsers.length > 0 ? (
+              <ul className="online-users-list">
+                {filteredUsers.map((user) => (
+                  <UserItem
+                    key={user.userId}
+                    user={user}
+                    myUserId={myUserId}
+                    handleUserClick={handleUserClick}
+                    profilePic={profilePics[user.userId]}
+                  />
+                ))}
+              </ul>
             ) : (
-              <EmptyState />
+              searchTerm ? (
+                <div className="no-results">
+                  <p>No users found matching "{searchTerm}"</p>
+                  <button onClick={() => setSearchTerm('')}>Clear search</button>
+                </div>
+              ) : (
+                <EmptyState />
+              )
             )}
-          </ul>
+          </div>
         </div>
       </div>
     </div>

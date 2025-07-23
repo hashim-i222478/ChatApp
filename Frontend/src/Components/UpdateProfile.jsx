@@ -35,7 +35,7 @@ const UpdateProfile = () => {
         }
       } catch (err) {
         setError('Failed to fetch user info.');
-      } finally {
+      }      finally {
         setLoading(false);
       }
     };
@@ -49,14 +49,13 @@ const UpdateProfile = () => {
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit
+      // Check file size (1MB = 1048576 bytes)
+      if (file.size > 1048576) {
         setShowSizeModal(true);
+        e.target.value = null; // Reset file input
         return;
       }
-      if (!file.type.startsWith('image/')) {
-        setError('Please select a valid image file.');
-        return;
-      }
+      
       setProfilePicture(file);
       const reader = new FileReader();
       reader.onload = (e) => setPreviewUrl(e.target.result);
@@ -86,16 +85,24 @@ const UpdateProfile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const updateData = { username: form.username, profilePic: previewUrl || '' };
-      if (form.pin) updateData.pin = form.pin;
-
+      
+      // Create FormData for multipart/form-data request (for file upload)
+      const formData = new FormData();
+      formData.append('username', form.username);
+      if (form.pin) formData.append('pin', form.pin);
+      
+      // Only append file if a new profile picture was selected
+      if (profilePicture) {
+        formData.append('profilePic', profilePicture);
+      }
+      
       const res = await fetch('http://localhost:5001/api/users/update', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          // Don't set Content-Type here, it will be set automatically with boundary for multipart/form-data
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(updateData)
+        body: formData
       });
 
       const data = await res.json();
@@ -104,7 +111,7 @@ const UpdateProfile = () => {
       setMessage('Profile updated successfully!');
       localStorage.setItem('username', form.username);
       setForm({ ...form, pin: '', confirmPin: '' });
-
+      
       
     } catch (err) {
       setError(` ${err.message}`);
@@ -144,7 +151,15 @@ const UpdateProfile = () => {
             <div className="profile-picture-container">
               <div className="profile-picture-preview">
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Profile Preview" className="profile-preview-image" />
+                  <img 
+                    src={previewUrl.startsWith('data:') 
+                      ? previewUrl 
+                      : previewUrl.startsWith('/uploads/') 
+                        ? `http://localhost:5001${previewUrl}` 
+                        : previewUrl} 
+                    alt="Profile Preview" 
+                    className="profile-preview-image" 
+                  />
                 ) : (
                   <div className="profile-picture-placeholder">
                     <span>No image selected</span>
@@ -165,7 +180,7 @@ const UpdateProfile = () => {
             </div>
           </div>
 
-          {loading && <p className="status loading">Processing...</p>}
+          {loading && <p className="status loading">Processing{profilePicture ? ' and uploading image' : ''}...</p>}
           {message && <p className="status success">{message}</p>}
           {error && <p className="status error">{error}</p>}
 
