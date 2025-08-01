@@ -1,7 +1,7 @@
 import React from "react";
 import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout, AiOutlineClose } from 'react-icons/ai';
 
-const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate }) => {
+const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate, isLoggingOut }) => {
     const IconComponent = {
         'AiOutlineHome': AiOutlineHome,
         'AiOutlineMessage': AiOutlineMessage,
@@ -46,8 +46,13 @@ const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate })
                             onClose();
                         }}
                         className="nav-button logout-button"
+                        disabled={isLoggingOut}
                     >
-                        <AiOutlineLogout className="nav-icon" />
+                        {isLoggingOut ? (
+                            <div className="logout-spinner"></div>
+                        ) : (
+                            <AiOutlineLogout className="nav-icon" />
+                        )}
                     </button>
                 </nav>
             </div>

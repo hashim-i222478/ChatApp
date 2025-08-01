@@ -1,11 +1,13 @@
 const express = require('express');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose'); // REMOVE
 const dotenv = require('dotenv');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const { UpdateUserProfile, getProfilePic } = require('./Controllers/profile');
 const verifyToken = require('./Middlewares/authMiddleware');
+// Sequelize connection
+const sequelize = require('./db');
 
 dotenv.config();
 
@@ -29,12 +31,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-mongoose.connect(process.env.MONGOURL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('ProfileServer: Connected to MongoDB'))
-.catch((err) => console.error('MongoDB connection error:', err));
+// REMOVE mongoose.connect and related code
+sequelize.authenticate()
+  .then(() => console.log('ProfileServer: Connected to MySQL database'))
+  .catch((err) => console.error('MySQL connection error:', err));
 
 const app = express();
 app.use(cors());

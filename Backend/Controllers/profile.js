@@ -1,4 +1,4 @@
-const User = require('../Models/User');
+const User = require('../Models/Sequelize/User');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const fs = require('fs');
@@ -11,7 +11,7 @@ exports.UpdateUserProfile = async (req, res) => {
       console.log('File upload:', req.file);
       
       const updates = {};
-      const allowedUpdates = ['username', 'pin', 'profilePic'];
+      const allowedUpdates = ['username', 'pin', 'profile_pic'];
       
       // Handle text-based updates
       allowedUpdates.forEach(field => {
@@ -25,11 +25,11 @@ exports.UpdateUserProfile = async (req, res) => {
         console.log('Processing uploaded file:', req.file.filename);
         
         // Get current user to find the previous profile picture
-        const currentUser = await User.findById(req.user._id);
+        const currentUser = await User.findByPk(req.user.id);
         
-        if (currentUser && currentUser.profilePic) {
+        if (currentUser && currentUser.profile_pic) {
           // Extract filename from path
-          const prevPicPath = currentUser.profilePic;
+          const prevPicPath = currentUser.profile_pic;
           if (prevPicPath && prevPicPath.startsWith('/uploads/')) {
             const filename = prevPicPath.split('/').pop();
             const fullPath = path.join(__dirname, '..', 'uploads', filename);
@@ -47,7 +47,7 @@ exports.UpdateUserProfile = async (req, res) => {
           }
         }
         
-        updates.profilePic = `/uploads/${req.file.filename}`;
+        updates.profile_pic = `/uploads/${req.file.filename}`;
       } else {
         console.log('No file was uploaded');
       }
@@ -57,21 +57,26 @@ exports.UpdateUserProfile = async (req, res) => {
         updates.pin = await bcrypt.hash(updates.pin, 10);
       }
   
-      const user = await User.findByIdAndUpdate(
-        req.user._id,
-        { $set: updates },
-        { new: true, runValidators: true }
+      const user = await User.update(
+        updates,
+        { 
+          where: { id: req.user.id },
+          returning: true
+        }
       );
+
+      // Get the updated user data
+      const updatedUser = await User.findByPk(req.user.id);
   
-      if (!user) {
+      if (!updatedUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
       // Notify main server to broadcast profile update
       try {
         await axios.post('http://localhost:8080/api/internal/broadcastProfileUpdate', {
-          userId: user.userId,
-          username: user.username,
+          userId: updatedUser.user_id,
+          username: updatedUser.username,
           oldUsername: req.user.username
         });
       } catch (broadcastErr) {
@@ -81,9 +86,9 @@ exports.UpdateUserProfile = async (req, res) => {
       res.status(200).json({
         message: 'Profile updated successfully',
         user: {
-          userId: user.userId,
-          username: user.username,
-          profilePic: user.profilePic
+          userId: updatedUser.user_id,
+          username: updatedUser.username,
+          profilePic: updatedUser.profile_pic
         }
       });
     } catch (err) {
@@ -94,11 +99,11 @@ exports.UpdateUserProfile = async (req, res) => {
 // In your controller (e.g., ManageUsers.js or profile.js)
 exports.getProfilePic = async (req, res) => {
   try {
-    const user = await User.findOne({ userId: req.params.userId });
+    const user = await User.findOne({ where: { user_id: req.params.userId } });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.status(200).json({ profilePic: user.profilePic || '' });
+    res.status(200).json({ profilePic: user.profile_pic || '' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

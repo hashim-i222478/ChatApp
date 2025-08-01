@@ -6,7 +6,7 @@ import '../Style/signup.css';
 // Modal component for registration success
 const SuccessModal = ({ newUserId, copied, onCopy, onClose }) => (
   <div className="modal-backdrop">
-    <div className="modal">
+    <div className="modal1">
       <h3 className="modal-title">Registration Successful!</h3>
       <p className="modal-subtitle">Your User ID is:</p>
       <div className="userid-copy-row">
@@ -16,7 +16,7 @@ const SuccessModal = ({ newUserId, copied, onCopy, onClose }) => (
       <p className="modal-note">Please save this User ID. You will need it to log in.</p>
       <button className="modal-button" onClick={onClose}>Go to Login</button>
     </div>
-    {copied && <div className="copied-message">User ID copied!</div>}
+    {copied && <div className="success-notification">User ID copied!</div>}
   </div>
 );
 

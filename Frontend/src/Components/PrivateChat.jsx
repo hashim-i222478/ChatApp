@@ -6,7 +6,8 @@ import '../Style/privateChat.css';
 import axios from 'axios';
 import { FaTrash, FaPaperPlane, FaSmile, FaPaperclip, FaArrowLeft, FaCheckSquare, 
          FaTimes, FaUserAlt, FaExclamationTriangle, FaUserSecret, FaFileAlt,
-         FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAudio, FaFileVideo } from 'react-icons/fa';
+         FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAudio, FaFileVideo, FaRegCheckSquare  } from 'react-icons/fa';
+import { set } from 'mongoose';
 
 const MessageItem = ({ msg, onMediaClick }) => {
   if (msg.system) {
@@ -120,6 +121,7 @@ const PrivateChat = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteNotification, setShowDeleteNotification] = useState(false);
 
   // --- Step 1: Media selection state ---
   const [selectedFile, setSelectedFile] = useState(null);
@@ -321,7 +323,7 @@ const PrivateChat = () => {
       }
     }
 
-    // Always send via WebSocket (for online delivery and sender echo)
+    // Send via WebSocket (handles both online and offline delivery)
     ws.current.send(JSON.stringify({
       type: 'private-message',
       toUserId: targetUserId,
@@ -336,20 +338,6 @@ const PrivateChat = () => {
     if (selectedFile && filePreview) URL.revokeObjectURL(filePreview);
     setSelectedFile(null);
     setFilePreview(null);
-
-    // If user is offline, store in DB via HTTP (with file info)
-    if (!isUserOnline) {
-      // Placeholder: send fileUrl, filename, fileType
-      await axios.post('http://localhost:8080/api/chats/private-messages/send', {
-        to: targetUserId,
-        message: input,
-        fileUrl,
-        filename,
-        fileType
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-    }
   };
 
   const handleInputChange = (e) => {
@@ -431,6 +419,11 @@ const PrivateChat = () => {
     setMessages(formatted);
     setSelectedMessages([]);
     setShowDeleteModal(false);
+    handleToggleSelectionMode();
+    
+    // Show delete notification
+    setShowDeleteNotification(true);
+    setTimeout(() => setShowDeleteNotification(false), 3000);
   };
 
   // Handler for deleting selected messages for everyone
@@ -443,7 +436,12 @@ const PrivateChat = () => {
       timestamps: selectedMessages
     }));
     setShowDeleteModal(false);
-    //setSelectedMessages([]);
+    setSelectedMessages([]);
+    handleToggleSelectionMode(); // close selection mode
+    
+    // Show delete notification
+    setShowDeleteNotification(true);
+    setTimeout(() => setShowDeleteNotification(false), 3000);
   };
 
   // --- Step 1: Handle file selection and preview ---
@@ -526,7 +524,7 @@ const PrivateChat = () => {
               onClick={handleToggleSelectionMode}
               title={selectionMode ? "Cancel selection" : "Select messages"}
             >
-              {selectionMode ? <><FaTimes /><span className="button-text">Cancel</span></> : <><FaCheckSquare /><span className="button-text">Select</span></>}
+              {selectionMode ? <><FaTimes /><span className="button-text">Cancel</span></> : <><FaRegCheckSquare /><span className="button-text">Select Messages</span></>}
             </button>
           </div>
         </div>
@@ -642,6 +640,14 @@ const PrivateChat = () => {
             </button>
           </div>
         )}
+        {/* Delete Notification */}
+        {showDeleteNotification && (
+          <div className="delete-notification">
+            <FaTrash className="notification-icon" />
+            <span>Message{selectedMessages.length > 1 ? 's' : ''} deleted successfully</span>
+          </div>
+        )}
+        
         <div className="chat-input-container">
           <input
             type="text"

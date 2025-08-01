@@ -1,24 +1,31 @@
 const WebSocket = require('ws');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose'); 
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./Routes/userRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
-const ChatMessages = require('./Models/ChatMessages');
+
 const wss = require('./wsServer');
-const PrivateMessages = require('./Models/PrivateMessages');
-const PendingDelete = require('./Models/PendingDelete');
+// const PrivateMessages = require('./Models/PrivateMessages');
+// const PendingDelete = require('./Models/PendingDelete'); 
 const path = require('path');
+// Sequelize models
+const sequelize = require('./db');
+const { 
+  PrivateConversation, 
+  PrivateMessage, 
+  PendingDelete, 
+  PendingDeleteTimestamp 
+} = require('./Models');
+const { Op } = require('sequelize');
 
 dotenv.config();
 
-mongoose.connect(process.env.MONGOURL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch((err) => console.error('MongoDB connection error:', err));
+
+sequelize.authenticate()
+  .then(() => console.log('Connected to MySQL database'))
+  .catch((err) => console.error('MySQL connection error:', err));
 
 const clients = new Map(); // Map ws -> { userId, username }
 const onlineUsers = new Map(); // userId -> { username, ws }
@@ -36,7 +43,7 @@ function broadcastOnlineUsers() {
   const message = {
     type: 'online-users',
     users
-  };
+  }; 
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify(message));
@@ -103,44 +110,59 @@ wss.on('connection', (ws) => {
           broadcastMessage(broadcastMsg, ws); // Exclude the user who updated
         }
         // --- Deliver and delete pending messages for this user ---
-        const pendingDocs = await PrivateMessages.find({ participants: parsed.userId });
-        for (const doc of pendingDocs) {
-          const deliverable = doc.messages.filter(msg => msg.to === parsed.userId);
+        // Find all conversations where this user is a participant
+        const conversations = await PrivateConversation.findAll({
+          where: {
+            [Op.or]: [
+              { participant1: parsed.userId },
+              { participant2: parsed.userId }
+            ]
+          }
+        });
+        for (const conv of conversations) {
+          // Find all messages in this conversation where to = parsed.userId
+          const deliverable = await PrivateMessage.findAll({
+            where: {
+              conversation_id: conv.id,
+              receiver_id: parsed.userId
+            }
+          });
           for (const msg of deliverable) {
             ws.send(JSON.stringify({
               type: 'private-message',
-              fromUserId: msg.from,
-              toUserId: msg.to,
+              fromUserId: msg.sender_id,
+              toUserId: msg.receiver_id,
               message: msg.message,
               time: msg.time instanceof Date ? msg.time.toISOString() : msg.time,
-              fileUrl: msg.fileUrl || null,
-              fileType: msg.fileType || null,
+              fileUrl: msg.file_url || null,
+              fileType: msg.file_type || null,
               filename: msg.filename || null
             }));
           }
-          // Remove delivered messages
-          doc.messages = doc.messages.filter(msg => msg.to !== parsed.userId);
-          if (doc.messages.length === 0) {
-            await doc.deleteOne();
-          } else {
-            await doc.save();
-          }
+          // Delete delivered messages
+          await PrivateMessage.destroy({
+            where: {
+              conversation_id: conv.id,
+              receiver_id: parsed.userId
+            }
+          });
         }
         // --- Deliver and delete pending delete-for-everyone events ---
-        const pendingDeletes = await PendingDelete.find({ userId: parsed.userId });
+        const pendingDeletes = await PendingDelete.findAll({ where: { user_id: parsed.userId } });
         for (const event of pendingDeletes) {
+          // Get all timestamps for this pending delete
+          const timestamps = await PendingDeleteTimestamp.findAll({ where: { pending_delete_id: event.id } });
           ws.send(JSON.stringify({
             type: 'delete-message-for-everyone',
-            chatKey: event.chatKey,
-            timestamps: event.timestamps
+            chatKey: event.chat_key,
+            timestamps: timestamps.map(t => t.message_timestamp)
           }));
         }
-        await PendingDelete.deleteMany({ userId: parsed.userId });
+        await PendingDelete.destroy({ where: { user_id: parsed.userId } });
         return;
       }
 
       if (parsed.type === 'typing' || parsed.type === 'stop-typing') {
-
         if (parsed.toUserId) {
           const recipient = onlineUsers.get(parsed.toUserId);
           if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
@@ -169,10 +191,21 @@ wss.on('connection', (ws) => {
         const sender = clients.get(ws);
         if (!sender) return;
         const { toUserId, message: privateMsg, file, fileUrl, filename, fileType } = parsed;
-        const [idA, idB] = [sender.userId, toUserId].sort();
-        const chatKey = `chat_${idA}_${idB}`;
-        const recipient = onlineUsers.get(toUserId);
+        // Find or create conversation
+        let [conversation] = await PrivateConversation.findOrCreate({
+          where: {
+            [Op.or]: [
+              { participant1: sender.userId, participant2: toUserId },
+              { participant1: toUserId, participant2: sender.userId }
+            ]
+          },
+          defaults: {
+            participant1: sender.userId,
+            participant2: toUserId
+          }
+        });
         const time = new Date().toISOString();
+        const recipient = onlineUsers.get(toUserId);
         // Prepare payload for both sender and recipient
         const payload = {
           type: 'private-message',
@@ -181,17 +214,30 @@ wss.on('connection', (ws) => {
           fromUsername: sender.username,
           message: privateMsg,
           time,
-          chatKey,
+          chatKey: `chat_${[sender.userId, toUserId].sort().join('_')}`,
           file: file || null,
           fileUrl: fileUrl || null,
           filename: filename || null,
           fileType: fileType || null
         };
+        
         if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
-          // Recipient online: deliver instantly
+          // Recipient online: deliver instantly, do NOT store in DB
           recipient.ws.send(JSON.stringify(payload));
+        } else {
+          // Recipient offline: store in DB for later delivery, do NOT deliver now
+          await PrivateMessage.create({
+            conversation_id: conversation.id,
+            sender_id: sender.userId,
+            receiver_id: toUserId,
+            message: privateMsg,
+            time,
+            file_url: fileUrl || null,
+            file_type: fileType || null,
+            filename: filename || null
+          });
         }
-        // Echo back to sender for their chat window
+        // Always send echo to sender (this is their own message)
         ws.send(JSON.stringify(payload));
         return;
       }
@@ -215,7 +261,11 @@ wss.on('connection', (ws) => {
               }));
             } else {
               console.log('User offline, storing pending delete for:', userId);
-              await PendingDelete.create({ userId, chatKey, timestamps });
+              // Create PendingDelete and PendingDeleteTimestamp entries
+              const pendingDelete = await PendingDelete.create({ user_id: userId, chat_key: chatKey });
+              for (const ts of timestamps) {
+                await PendingDeleteTimestamp.create({ pending_delete_id: pendingDelete.id, message_timestamp: ts });
+              }
             }
           });
         }
@@ -236,12 +286,13 @@ wss.on('connection', (ws) => {
     };
     console.log(`Received: ${user.username} [${time}]: ${message}`);
     
+    // TODO: Update ChatMessages to use Sequelize
     // Save chat message to the database (push to user's messages array)
-    ChatMessages.findOneAndUpdate(
-      { userId: user.userId },
-      { $push: { messages: { message: message.toString() } } },
-      { upsert: true, new: true }
-    ).catch(err => console.error('Error saving chat message:', err));
+    // ChatMessages.findOneAndUpdate(
+    //   { userId: user.userId },
+    //   { $push: { messages: { message: message.toString() } } },
+    //   { upsert: true, new: true }
+    // ).catch(err => console.error('Error saving chat message:', err));
     
     // Broadcast the message to all connected clients
     broadcastMessage(chatMsg);

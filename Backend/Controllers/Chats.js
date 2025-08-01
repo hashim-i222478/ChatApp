@@ -1,12 +1,22 @@
-const ChatMessages = require('../Models/ChatMessages');
-const PrivateMessages =  require('../Models/PrivateMessages');
-const User = require('../Models/User');
+const PrivateConversation = require('../Models/Sequelize/PrivateConversation');
+const PrivateMessage = require('../Models/Sequelize/PrivateMessage');
+const User = require('../Models/Sequelize/User');
+const { ChatMessage, ChatMessageEntry } = require('../Models');
+const { Op } = require('sequelize');
 
 //get all chat messages
 exports.getAllChatMessages = async (req, res) => {
     try {
-        const messages = await ChatMessages.find().sort({ 'messages.timestamp': -1 });
-        res.status(200).json(messages);
+        // Get all chat messages using Sequelize
+        const chatMessages = await ChatMessage.findAll({
+            include: [{
+                model: ChatMessageEntry,
+                order: [['timestamp', 'DESC']]
+            }],
+            order: [['id', 'DESC']]
+        });
+        
+        res.status(200).json(chatMessages);
     } catch (error) {
         console.error('Error fetching chat messages:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -19,20 +29,40 @@ exports.getPrivateChatHistory = async (req, res) => {
         const myUserId = req.user.userId; // from auth middleware
         const otherUserId = req.params.userId;
 
-        // Find the conversation document for these two users (order doesn't matter)
-        const conversation = await PrivateMessages.findOne({
-            participants: { $all: [myUserId, otherUserId] }
+        // Find the conversation between these two users
+        const conversation = await PrivateConversation.findOne({
+            where: {
+                [Op.or]: [
+                    { participant1: myUserId, participant2: otherUserId },
+                    { participant1: otherUserId, participant2: myUserId }
+                ]
+            }
         });
 
         if (!conversation) {
             return res.status(200).json([]); // No messages yet
         }
 
-        // Return sorted messages (oldest first)
-        const sortedMessages = conversation.messages.sort((a, b) => new Date(a.time) - new Date(b.time));
-        res.status(200).json(sortedMessages);
+        // Get all messages for this conversation, sorted by time
+        const messages = await PrivateMessage.findAll({
+            where: { conversation_id: conversation.id },
+            order: [['time', 'ASC']] // oldest first
+        });
+
+        // Transform to match expected format
+        const formattedMessages = messages.map(msg => ({
+            from: msg.sender_id,
+            to: msg.receiver_id,
+            message: msg.message,
+            time: msg.time,
+            fileUrl: msg.file_url,
+            fileType: msg.file_type,
+            filename: msg.filename
+        }));
+
+        res.status(200).json(formattedMessages);
         console.log("Get private chat history Controller");
-        console.log(sortedMessages);
+        console.log(formattedMessages);
     } catch (error) {
         console.error('Error fetching private chat history:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -49,36 +79,47 @@ exports.sendPrivateMessage = async (req, res) => {
             return res.status(400).json({ message: 'Recipient and message or file are required.' });
         }
 
-        // Find or create the conversation document
-        let conversation = await PrivateMessages.findOne({
-            participants: { $all: [from, to] }
+        // Find or create the conversation
+        let [conversation, created] = await PrivateConversation.findOrCreate({
+            where: {
+                [Op.or]: [
+                    { participant1: from, participant2: to },
+                    { participant1: to, participant2: from }
+                ]
+            },
+            defaults: {
+                participant1: from,
+                participant2: to
+            }
         });
 
-        const newMessage = {
-            from,
-            to,
-            message,
+        // Create the new message
+        const newMessage = await PrivateMessage.create({
+            conversation_id: conversation.id,
+            sender_id: from,
+            receiver_id: to,
+            message: message || null,
             time: new Date(),
-            fileUrl: fileUrl || null,
-            fileType: fileType || null,
+            file_url: fileUrl || null,
+            file_type: fileType || null,
             filename: filename || null
+        });
+
+        // Return formatted message
+        const formattedMessage = {
+            from: newMessage.sender_id,
+            to: newMessage.receiver_id,
+            message: newMessage.message,
+            time: newMessage.time,
+            fileUrl: newMessage.file_url,
+            fileType: newMessage.file_type,
+            filename: newMessage.filename
         };
 
-        if (conversation) {
-            conversation.messages.push(newMessage);
-            await conversation.save();
-        } else {
-            conversation = new PrivateMessages({
-                participants: [from, to],
-                messages: [newMessage]
-            });
-            await conversation.save();
-        }
-
-        res.status(201).json(newMessage);
+        res.status(201).json(formattedMessage);
         console.log("Send private message Controller");
         console.log(conversation);
-        console.log(newMessage);
+        console.log(formattedMessage);
     } catch (error) {
         console.error('Error sending private message:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -92,20 +133,28 @@ exports.deletePrivateMessage = async (req, res) => {
         const myUserId = req.user.userId; // from auth middleware
         const otherUserId = req.params.userId;
 
-        // Find the conversation document for these two users
-        const conversation = await PrivateMessages.findOne({
-            participants: { $all: [myUserId, otherUserId] }
+        // Find the conversation between these two users
+        const conversation = await PrivateConversation.findOne({
+            where: {
+                [Op.or]: [
+                    { participant1: myUserId, participant2: otherUserId },
+                    { participant1: otherUserId, participant2: myUserId }
+                ]
+            }
         });
 
         if (!conversation) {
             return res.status(404).json({ message: 'Conversation not found.' });
         }
 
-        // Filter out messages from the other user
-        conversation.messages = conversation.messages.filter(msg => msg.from !== otherUserId);
+        // Delete all messages from the other user in this conversation
+        await PrivateMessage.destroy({
+            where: {
+                conversation_id: conversation.id,
+                sender_id: otherUserId
+            }
+        });
 
-        // Save the updated conversation
-        await conversation.save();
         console.log("Delete private message Controller");
         res.status(200).json({ message: 'Messages deleted successfully.' });
     } catch (error) {
@@ -114,59 +163,66 @@ exports.deletePrivateMessage = async (req, res) => {
     }
 };
 
-
-
 // Get all recent private chats for a user
 exports.getRecentPrivateChats = async (req, res) => {
-  try {
-    const myUserId = req.user.userId; // from auth middleware
+    try {
+        const myUserId = req.user.userId; // from auth middleware
 
-    // Find all conversations where the user is a participant
-    const conversations = await PrivateMessages.find({
-      participants: myUserId
-    });
+        // Find all conversations where the user is a participant
+        const conversations = await PrivateConversation.findAll({
+            where: {
+                [Op.or]: [
+                    { participant1: myUserId },
+                    { participant2: myUserId }
+                ]
+            }
+        });
 
-    // For each conversation, find the other participant and the last message
-    const recentChats = await Promise.all(conversations.map(async (conv) => {
-      // Get the other participant's userId
-      const otherUserId = conv.participants.find(id => id !== myUserId);
+        // For each conversation, find the other participant and the last message
+        const recentChats = await Promise.all(conversations.map(async (conv) => {
+            // Get the other participant's userId
+            const otherUserId = conv.participant1 === myUserId ? conv.participant2 : conv.participant1;
 
-      // Get the other user's username
-      const otherUser = await User.findOne({ userId: otherUserId });
-      const username = otherUser ? otherUser.username : 'Unknown';
+            // Get the other user's username
+            const otherUser = await User.findOne({ where: { user_id: otherUserId } });
+            const username = otherUser ? otherUser.username : 'Unknown';
 
-      // Get the last message
-      const lastMsgObj = conv.messages[conv.messages.length - 1];
-      return {
-        userId: otherUserId,
-        username,
-        lastMessage: lastMsgObj ? lastMsgObj.message : '',
-        lastMessageTime: lastMsgObj ? lastMsgObj.time : null
-      };
-    }));
+            // Get the last message
+            const lastMessage = await PrivateMessage.findOne({
+                where: { conversation_id: conv.id },
+                order: [['time', 'DESC']]
+            });
 
-    // Sort by last message time, newest first
-    recentChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+            return {
+                userId: otherUserId,
+                username,
+                lastMessage: lastMessage ? lastMessage.message : '',
+                lastMessageTime: lastMessage ? lastMessage.time : null
+            };
+        }));
 
-    res.status(200).json(recentChats);
-  } catch (error) {
-    console.error('Error fetching recent private chats:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+        // Sort by last message time, newest first
+        recentChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+        res.status(200).json(recentChats);
+    } catch (error) {
+        console.error('Error fetching recent private chats:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 };
 
 // Upload private media file
 exports.uploadPrivateMediaFile = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded.' });
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded.' });
+        }
+        // Return the file URL/path
+        const fileUrl = `/uploads/private-media/${req.file.filename}`;
+        res.status(201).json({ url: fileUrl, filename: req.file.originalname, fileType: req.file.mimetype });
+    } catch (error) {
+        console.error('Error uploading private media file:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
-    // Return the file URL/path
-    const fileUrl = `/uploads/private-media/${req.file.filename}`;
-    res.status(201).json({ url: fileUrl, filename: req.file.originalname, fileType: req.file.mimetype });
-  } catch (error) {
-    console.error('Error uploading private media file:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
 };
 

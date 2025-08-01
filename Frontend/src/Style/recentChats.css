@@ -59,12 +59,11 @@
     padding-right: 2.5rem;
     border: 1.5px solid #a5b4fc;
     border-radius: 2rem;
-    background: rgba(224, 231, 255, 0.2);
+    background: rgba(224, 231, 255, 0.3);
     font-size: 0.9rem;
     color: #1e293b;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
-    backdrop-filter: blur(4px);
 }
 
 .search-icon {
@@ -73,19 +72,19 @@
     top: 50%;
     transform: translateY(-50%);
     font-size: 0.9rem;
-    color: #6366f1;
+    color: #2563eb;
     pointer-events: none;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-    background: rgba(224, 231, 255, 0.4);
+    background: rgba(224, 231, 255, 0.5);
 }
 
 .search-input::placeholder {
-    color: #8896e0;
+    color: #7182d8;
     font-style: italic;
 }
 
@@ -108,7 +107,8 @@
 
 .clear-search:hover {
     color: #ef4444;
-    transform: scale(1.1);
+    size: 1.5rem;
+    transform: translateY(-50%) scale(1.1);
 }
 
 .recent-chats-list {
@@ -132,9 +132,9 @@
 }
 
 .chat-item:hover {
-    border-color: #6366f1;
+   
     background: #f1f5f9;
-    box-shadow: 0 4px 16px rgba(99,102,241,0.10);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
 }
 
 .user-avatar {
@@ -186,7 +186,7 @@
     font-size: 0.75rem;
     color: #6b7280;
     display: inline-block;
-    background: rgba(224, 231, 255, 0.4);
+    background: rgba(203, 202, 202, 0.4);
     padding: 0.1rem 0.5rem;
     border-radius: 1rem;
     vertical-align: middle;
@@ -200,16 +200,16 @@
 }
 
 .message-text {
-    color: #a5b4fc;
+    color: #8a9bf1;
 }
 
 .message-time {
-    color: #b6c2e1;
+    color: #8a9bf1;
     font-size: 0.75rem;
 }
 
 .no-message {
-    color: #b6c2e1;
+    color: #8a9bf1;
     font-style: italic;
 }
 

@@ -19,6 +19,7 @@ const Header = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarAnimClass, setSidebarAnimClass] = useState('');
     const [usernames, setUsernames] = useState({});
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const token = localStorage.getItem('token');
 
     useEffect(() => {
@@ -111,18 +112,24 @@ const Header = () => {
 
     const handleLogout = () => {
         console.log('Attempting to log out...');
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        localStorage.removeItem('email');
-        localStorage.removeItem('userId');
-        console.log('LocalStorage after logout:', {
-            token: localStorage.getItem('token'),
-            username: localStorage.getItem('username'),
-            email: localStorage.getItem('email'),
-            userId: localStorage.getItem('userId'),
-        });
-        navigate('/login', { replace: true });
-        console.log('Redirecting to login page...');
+        setIsLoggingOut(true);
+        
+        // Show loader for 3 seconds before actually logging out
+        setTimeout(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('email');
+            localStorage.removeItem('userId');
+            console.log('LocalStorage after logout:', {
+                token: localStorage.getItem('token'),
+                username: localStorage.getItem('username'),
+                email: localStorage.getItem('email'),
+                userId: localStorage.getItem('userId'),
+            });
+            setIsLoggingOut(false);
+            navigate('/login', { replace: true });
+            console.log('Redirecting to login page...');
+        }, 3000);
     };
 
     const navItems = [
@@ -177,8 +184,15 @@ const Header = () => {
                             className={`nav-button logout-button${location.pathname === '/login' ? ' nav-button-active' : ''}`}
                             onClick={handleLogout}
                             title="Logout"
+                            disabled={isLoggingOut}
                         >
-                            <span className="nav-icon"><AiOutlineLogout /></span>
+                            <span className="nav-icon">
+                                {isLoggingOut ? (
+                                    <div className="logout-spinner"></div>
+                                ) : (
+                                    <AiOutlineLogout />
+                                )}
+                            </span>
                         </button>
                         <div className="mobile-menu-button-container">
                             <button
@@ -203,6 +217,7 @@ const Header = () => {
                     onLogout={handleLogout}
                     location={location}
                     navigate={navigate}
+                    isLoggingOut={isLoggingOut}
                 />
                 {sidebarOpen && (
                     <div className={`header-notification-sidebar ${sidebarAnimClass}`}>
@@ -230,6 +245,16 @@ const Header = () => {
                     </div>
                 )}
             </div>
+            
+            {/* Logout Loader Overlay */}
+            {isLoggingOut && (
+                <div className="logout-overlay">
+                    <div className="logout-loader-container">
+                        <div className="logout-loader-spinner"></div>
+                        <p className="logout-loader-text">Logging out...</p>
+                    </div>
+                </div>
+            )}
         </header>
     );
 };
