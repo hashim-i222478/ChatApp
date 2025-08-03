@@ -1,5 +1,7 @@
 //const User = require('../Models/User');
-const User = require('../Models/Sequelize/User');
+// const User = require('../Models/Sequelize/User');
+// MySQL connection
+const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
@@ -49,8 +51,11 @@ exports.signup = async (req, res) => {
     }
     
     // Check if username already exists
-    const existingUser = await User.findOne({ where: { username } });
-    if (existingUser) {
+    const [existingUser] = await pool.execute(
+      `SELECT * FROM users WHERE username = ?`,
+      [username]
+    );
+    if (existingUser.length > 0) {
       return res.status(400).json({ message: 'Username already exists' });
     }
     
@@ -59,18 +64,21 @@ exports.signup = async (req, res) => {
     let userIdExists = true;
     while (userIdExists) {
       userId = generateUserId();
-      userIdExists = await User.findOne({ where: { user_id: userId } });
+      const [userCheck] = await pool.execute(
+        `SELECT * FROM users WHERE user_id = ?`,
+        [userId]
+      );
+      userIdExists = userCheck.length > 0;
     }
     
     // Hash pin
     const hashedPin = await bcrypt.hash(pin, 10);
     
-    // Create user using Sequelize
-    const user = await User.create({ 
-      user_id: userId, 
-      username, 
-      pin: hashedPin 
-    });
+    // Create user using raw SQL
+    await pool.execute(
+      `INSERT INTO users (user_id, username, pin) VALUES (?, ?, ?)`,
+      [userId, username, hashedPin]
+    );
     
     res.status(201).json({ message: 'User registered successfully', userId });
   } catch (err) {
@@ -124,7 +132,12 @@ exports.uploadProfilePic = async (req, res) => {
     }
     
     // Find user to get previous profile picture
-    const user = await User.findOne({ where: { user_id: userId } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE user_id = ?`,
+      [userId]
+    );
+    const user = userResult[0];
+    
     if (user && user.profile_pic) {
       // Delete previous profile picture
       const prevPicPath = user.profile_pic;
@@ -145,9 +158,9 @@ exports.uploadProfilePic = async (req, res) => {
     }
     
     const profilePicUrl = `/uploads/${req.file.filename}`;
-    await User.update(
-      { profile_pic: profilePicUrl },
-      { where: { user_id: userId } }
+    await pool.execute(
+      `UPDATE users SET profile_pic = ? WHERE user_id = ?`,
+      [profilePicUrl, userId]
     );
     res.status(200).json({ message: 'Profile picture uploaded', profilePic: profilePicUrl });
   } catch (err) {
@@ -191,7 +204,12 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'userId and PIN are required.' });
     }
     
-    const user = await User.findOne({ where: { user_id: userId } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE user_id = ?`,
+      [userId]
+    );
+    const user = userResult[0];
+    
     if (!user) {
       return res.status(400).json({ message: 'Invalid userId or PIN' });
     }
@@ -238,7 +256,12 @@ exports.login = async (req, res) => {
 //get User
 exports.getuser = async (req, res) => {
   try {
-    const user = await User.findOne({ where: { id: req.user.id } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+    const user = userResult[0];
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     } else {
@@ -304,7 +327,12 @@ exports.getuser = async (req, res) => {
 
 exports.GetUserId = async (req, res) => {
   try {
-    const user = await User.findOne({ where: { id: req.user.id } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+    const user = userResult[0];
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -319,7 +347,12 @@ exports.GetUserId = async (req, res) => {
 //fetch username from userId from url
 exports.fetchUsername = async (req, res) => {
   try {
-    const user = await User.findOne({ where: { user_id: req.params.userId } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE user_id = ?`,
+      [req.params.userId]
+    );
+    const user = userResult[0];
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -332,7 +365,12 @@ exports.fetchUsername = async (req, res) => {
 //get a user by its userId
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findOne({ where: { user_id: req.params.userId } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE user_id = ?`,
+      [req.params.userId]
+    );
+    const user = userResult[0];
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

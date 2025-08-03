@@ -1,22 +1,47 @@
-const PrivateConversation = require('../Models/Sequelize/PrivateConversation');
-const PrivateMessage = require('../Models/Sequelize/PrivateMessage');
-const User = require('../Models/Sequelize/User');
-const { ChatMessage, ChatMessageEntry } = require('../Models');
-const { Op } = require('sequelize');
+// const PrivateConversation = require('../Models/Sequelize/PrivateConversation');
+// const PrivateMessage = require('../Models/Sequelize/PrivateMessage');
+// const User = require('../Models/Sequelize/User');
+// const { ChatMessage, ChatMessageEntry } = require('../Models');
+// const { Op } = require('sequelize');
+// MySQL connection
+const pool = require('../db');
 
 //get all chat messages
 exports.getAllChatMessages = async (req, res) => {
     try {
-        // Get all chat messages using Sequelize
-        const chatMessages = await ChatMessage.findAll({
-            include: [{
-                model: ChatMessageEntry,
-                order: [['timestamp', 'DESC']]
-            }],
-            order: [['id', 'DESC']]
-        });
+        // Get all chat messages using raw SQL with JOIN
+        const [chatMessages] = await pool.execute(
+            `SELECT cm.id, cm.user_id, cm.username, cm.created_at,
+                    cme.id as entry_id, cme.message, cme.time
+             FROM chat_messages cm
+             LEFT JOIN chat_message_entries cme ON cm.id = cme.chat_message_id
+             ORDER BY cm.id DESC, cme.time DESC`
+        );
         
-        res.status(200).json(chatMessages);
+        // Group messages by chat_message_id
+        const groupedMessages = chatMessages.reduce((acc, row) => {
+            const chatMessageId = row.id;
+            if (!acc[chatMessageId]) {
+                acc[chatMessageId] = {
+                    id: row.id,
+                    user_id: row.user_id,
+                    username: row.username,
+                    created_at: row.created_at,
+                    entries: []
+                };
+            }
+            if (row.entry_id) {
+                acc[chatMessageId].entries.push({
+                    id: row.entry_id,
+                    message: row.message,
+                    time: row.time
+                });
+            }
+            return acc;
+        }, {});
+        
+        const result = Object.values(groupedMessages);
+        res.status(200).json(result);
     } catch (error) {
         console.error('Error fetching chat messages:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -29,25 +54,16 @@ exports.getPrivateChatHistory = async (req, res) => {
         const myUserId = req.user.userId; // from auth middleware
         const otherUserId = req.params.userId;
 
-        // Find the conversation between these two users
-        const conversation = await PrivateConversation.findOne({
-            where: {
-                [Op.or]: [
-                    { participant1: myUserId, participant2: otherUserId },
-                    { participant1: otherUserId, participant2: myUserId }
-                ]
-            }
-        });
-
-        if (!conversation) {
-            return res.status(200).json([]); // No messages yet
-        }
-
-        // Get all messages for this conversation, sorted by time
-        const messages = await PrivateMessage.findAll({
-            where: { conversation_id: conversation.id },
-            order: [['time', 'ASC']] // oldest first
-        });
+        // Use JOIN to get messages directly without separate conversation query
+        const [messages] = await pool.execute(
+            `SELECT pm.*, pc.participant1, pc.participant2
+             FROM private_messages pm
+             JOIN private_conversations pc ON pm.conversation_id = pc.id
+             WHERE ((pc.participant1 = ? AND pc.participant2 = ?) 
+                    OR (pc.participant1 = ? AND pc.participant2 = ?))
+             ORDER BY pm.time ASC`,
+            [myUserId, otherUserId, otherUserId, myUserId]
+        );
 
         // Transform to match expected format
         const formattedMessages = messages.map(msg => ({
@@ -79,41 +95,42 @@ exports.sendPrivateMessage = async (req, res) => {
             return res.status(400).json({ message: 'Recipient and message or file are required.' });
         }
 
-        // Find or create the conversation
-        let [conversation, created] = await PrivateConversation.findOrCreate({
-            where: {
-                [Op.or]: [
-                    { participant1: from, participant2: to },
-                    { participant1: to, participant2: from }
-                ]
-            },
-            defaults: {
-                participant1: from,
-                participant2: to
-            }
-        });
+        // Find or create conversation using raw SQL
+        let [existingConv] = await pool.execute(
+            `SELECT * FROM private_conversations 
+             WHERE (participant1 = ? AND participant2 = ?) 
+                OR (participant1 = ? AND participant2 = ?)`,
+            [from, to, to, from]
+        );
+
+        let conversation;
+        if (existingConv.length > 0) {
+            conversation = existingConv[0];
+        } else {
+            // Create new conversation
+            const [result] = await pool.execute(
+                `INSERT INTO private_conversations (participant1, participant2) VALUES (?, ?)`,
+                [from, to]
+            );
+            conversation = { id: result.insertId };
+        }
 
         // Create the new message
-        const newMessage = await PrivateMessage.create({
-            conversation_id: conversation.id,
-            sender_id: from,
-            receiver_id: to,
-            message: message || null,
-            time: new Date(),
-            file_url: fileUrl || null,
-            file_type: fileType || null,
-            filename: filename || null
-        });
+        const [messageResult] = await pool.execute(
+            `INSERT INTO private_messages (conversation_id, sender_id, receiver_id, message, time, file_url, file_type, filename) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [conversation.id, from, to, message || null, new Date(), fileUrl || null, fileType || null, filename || null]
+        );
 
         // Return formatted message
         const formattedMessage = {
-            from: newMessage.sender_id,
-            to: newMessage.receiver_id,
-            message: newMessage.message,
-            time: newMessage.time,
-            fileUrl: newMessage.file_url,
-            fileType: newMessage.file_type,
-            filename: newMessage.filename
+            from: from,
+            to: to,
+            message: message,
+            time: new Date(),
+            fileUrl: fileUrl,
+            fileType: fileType,
+            filename: filename
         };
 
         res.status(201).json(formattedMessage);
@@ -133,27 +150,15 @@ exports.deletePrivateMessage = async (req, res) => {
         const myUserId = req.user.userId; // from auth middleware
         const otherUserId = req.params.userId;
 
-        // Find the conversation between these two users
-        const conversation = await PrivateConversation.findOne({
-            where: {
-                [Op.or]: [
-                    { participant1: myUserId, participant2: otherUserId },
-                    { participant1: otherUserId, participant2: myUserId }
-                ]
-            }
-        });
-
-        if (!conversation) {
-            return res.status(404).json({ message: 'Conversation not found.' });
-        }
-
-        // Delete all messages from the other user in this conversation
-        await PrivateMessage.destroy({
-            where: {
-                conversation_id: conversation.id,
-                sender_id: otherUserId
-            }
-        });
+        // Delete messages using JOIN to find the correct conversation
+        const [result] = await pool.execute(
+            `DELETE pm FROM private_messages pm
+             JOIN private_conversations pc ON pm.conversation_id = pc.id
+             WHERE ((pc.participant1 = ? AND pc.participant2 = ?) 
+                    OR (pc.participant1 = ? AND pc.participant2 = ?))
+             AND pm.sender_id = ?`,
+            [myUserId, otherUserId, otherUserId, myUserId, otherUserId]
+        );
 
         console.log("Delete private message Controller");
         res.status(200).json({ message: 'Messages deleted successfully.' });
@@ -168,43 +173,41 @@ exports.getRecentPrivateChats = async (req, res) => {
     try {
         const myUserId = req.user.userId; // from auth middleware
 
-        // Find all conversations where the user is a participant
-        const conversations = await PrivateConversation.findAll({
-            where: {
-                [Op.or]: [
-                    { participant1: myUserId },
-                    { participant2: myUserId }
-                ]
-            }
-        });
+        // Use a complex JOIN query to get recent chats with last message in one query
+        const [recentChats] = await pool.execute(
+            `SELECT DISTINCT
+                pc.id as conversation_id,
+                CASE 
+                    WHEN pc.participant1 = ? THEN pc.participant2 
+                    ELSE pc.participant1 
+                END as other_user_id,
+                u.username,
+                pm_last.message as last_message,
+                pm_last.time as last_message_time
+             FROM private_conversations pc
+             LEFT JOIN users u ON u.user_id = CASE 
+                    WHEN pc.participant1 = ? THEN pc.participant2 
+                    ELSE pc.participant1 
+                END
+             LEFT JOIN private_messages pm_last ON pm_last.conversation_id = pc.id
+                AND pm_last.time = (
+                    SELECT MAX(time) FROM private_messages pm2 
+                    WHERE pm2.conversation_id = pc.id
+                )
+             WHERE pc.participant1 = ? OR pc.participant2 = ?
+             ORDER BY pm_last.time DESC`,
+            [myUserId, myUserId, myUserId, myUserId]
+        );
 
-        // For each conversation, find the other participant and the last message
-        const recentChats = await Promise.all(conversations.map(async (conv) => {
-            // Get the other participant's userId
-            const otherUserId = conv.participant1 === myUserId ? conv.participant2 : conv.participant1;
-
-            // Get the other user's username
-            const otherUser = await User.findOne({ where: { user_id: otherUserId } });
-            const username = otherUser ? otherUser.username : 'Unknown';
-
-            // Get the last message
-            const lastMessage = await PrivateMessage.findOne({
-                where: { conversation_id: conv.id },
-                order: [['time', 'DESC']]
-            });
-
-            return {
-                userId: otherUserId,
-                username,
-                lastMessage: lastMessage ? lastMessage.message : '',
-                lastMessageTime: lastMessage ? lastMessage.time : null
-            };
+        // Format the results
+        const formattedChats = recentChats.map(chat => ({
+            userId: chat.other_user_id,
+            username: chat.username || 'Unknown',
+            lastMessage: chat.last_message || '',
+            lastMessageTime: chat.last_message_time
         }));
 
-        // Sort by last message time, newest first
-        recentChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
-
-        res.status(200).json(recentChats);
+        res.status(200).json(formattedChats);
     } catch (error) {
         console.error('Error fetching recent private chats:', error);
         res.status(500).json({ message: 'Internal server error' });

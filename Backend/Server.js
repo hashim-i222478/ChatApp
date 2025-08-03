@@ -7,25 +7,26 @@ const userRoutes = require('./Routes/userRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
 
 const wss = require('./wsServer');
-// const PrivateMessages = require('./Models/PrivateMessages');
-// const PendingDelete = require('./Models/PendingDelete'); 
 const path = require('path');
-// Sequelize models
-const sequelize = require('./db');
-const { 
-  PrivateConversation, 
-  PrivateMessage, 
-  PendingDelete, 
-  PendingDeleteTimestamp 
-} = require('./Models');
-const { Op } = require('sequelize');
+// MySQL connection
+const pool = require('./db');
 
 dotenv.config();
 
+// Test MySQL connection
+async function testDatabaseConnection() {
+  try {
+    const connection = await pool.getConnection();
+    console.log('Connected to MySQL database');
+    connection.release();
+  } catch (err) {
+    console.error('MySQL connection error:', err);
+    process.exit(1);
+  }
+}
 
-sequelize.authenticate()
-  .then(() => console.log('Connected to MySQL database'))
-  .catch((err) => console.error('MySQL connection error:', err));
+// Test connection on startup
+testDatabaseConnection();
 
 const clients = new Map(); // Map ws -> { userId, username }
 const onlineUsers = new Map(); // userId -> { username, ws }
@@ -110,23 +111,17 @@ wss.on('connection', (ws) => {
           broadcastMessage(broadcastMsg, ws); // Exclude the user who updated
         }
         // --- Deliver and delete pending messages for this user ---
-        // Find all conversations where this user is a participant
-        const conversations = await PrivateConversation.findAll({
-          where: {
-            [Op.or]: [
-              { participant1: parsed.userId },
-              { participant2: parsed.userId }
-            ]
-          }
-        });
-        for (const conv of conversations) {
-          // Find all messages in this conversation where to = parsed.userId
-          const deliverable = await PrivateMessage.findAll({
-            where: {
-              conversation_id: conv.id,
-              receiver_id: parsed.userId
-            }
-          });
+        try {
+          // Use JOIN to get all pending messages for this user in one query
+          const [deliverable] = await pool.execute(
+            `SELECT pm.*, pc.participant1, pc.participant2 
+             FROM private_messages pm
+             JOIN private_conversations pc ON pm.conversation_id = pc.id
+             WHERE (pc.participant1 = ? OR pc.participant2 = ?) 
+             AND pm.receiver_id = ?`,
+            [parsed.userId, parsed.userId, parsed.userId]
+          );
+
           for (const msg of deliverable) {
             ws.send(JSON.stringify({
               type: 'private-message',
@@ -139,26 +134,44 @@ wss.on('connection', (ws) => {
               filename: msg.filename || null
             }));
           }
-          // Delete delivered messages
-          await PrivateMessage.destroy({
-            where: {
-              conversation_id: conv.id,
-              receiver_id: parsed.userId
-            }
-          });
+
+          // Delete delivered messages using JOIN
+          await pool.execute(
+            `DELETE pm FROM private_messages pm
+             JOIN private_conversations pc ON pm.conversation_id = pc.id
+             WHERE (pc.participant1 = ? OR pc.participant2 = ?) 
+             AND pm.receiver_id = ?`,
+            [parsed.userId, parsed.userId, parsed.userId]
+          );
+
+          // --- Deliver and delete pending delete-for-everyone events ---
+          // Use JOIN to get pending deletes with their timestamps in one query
+          const [pendingDeletesWithTimestamps] = await pool.execute(
+            `SELECT pd.id, pd.chat_key, 
+                    GROUP_CONCAT(pdt.message_timestamp) as timestamps
+             FROM pending_deletes pd
+             LEFT JOIN pending_delete_timestamps pdt ON pd.id = pdt.pending_delete_id
+             WHERE pd.user_id = ?
+             GROUP BY pd.id, pd.chat_key`,
+            [parsed.userId]
+          );
+
+          for (const event of pendingDeletesWithTimestamps) {
+            ws.send(JSON.stringify({
+              type: 'delete-message-for-everyone',
+              chatKey: event.chat_key,
+              timestamps: event.timestamps ? event.timestamps.split(',') : []
+            }));
+          }
+
+          // Delete all pending deletes for this user (CASCADE will handle timestamps)
+          await pool.execute(
+            `DELETE FROM pending_deletes WHERE user_id = ?`,
+            [parsed.userId]
+          );
+        } catch (error) {
+          console.error('Error handling pending messages:', error);
         }
-        // --- Deliver and delete pending delete-for-everyone events ---
-        const pendingDeletes = await PendingDelete.findAll({ where: { user_id: parsed.userId } });
-        for (const event of pendingDeletes) {
-          // Get all timestamps for this pending delete
-          const timestamps = await PendingDeleteTimestamp.findAll({ where: { pending_delete_id: event.id } });
-          ws.send(JSON.stringify({
-            type: 'delete-message-for-everyone',
-            chatKey: event.chat_key,
-            timestamps: timestamps.map(t => t.message_timestamp)
-          }));
-        }
-        await PendingDelete.destroy({ where: { user_id: parsed.userId } });
         return;
       }
 
@@ -191,54 +204,63 @@ wss.on('connection', (ws) => {
         const sender = clients.get(ws);
         if (!sender) return;
         const { toUserId, message: privateMsg, file, fileUrl, filename, fileType } = parsed;
-        // Find or create conversation
-        let [conversation] = await PrivateConversation.findOrCreate({
-          where: {
-            [Op.or]: [
-              { participant1: sender.userId, participant2: toUserId },
-              { participant1: toUserId, participant2: sender.userId }
-            ]
-          },
-          defaults: {
-            participant1: sender.userId,
-            participant2: toUserId
-          }
-        });
-        const time = new Date().toISOString();
-        const recipient = onlineUsers.get(toUserId);
-        // Prepare payload for both sender and recipient
-        const payload = {
-          type: 'private-message',
-          fromUserId: sender.userId,
-          toUserId,
-          fromUsername: sender.username,
-          message: privateMsg,
-          time,
-          chatKey: `chat_${[sender.userId, toUserId].sort().join('_')}`,
-          file: file || null,
-          fileUrl: fileUrl || null,
-          filename: filename || null,
-          fileType: fileType || null
-        };
         
-        if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
-          // Recipient online: deliver instantly, do NOT store in DB
-          recipient.ws.send(JSON.stringify(payload));
-        } else {
-          // Recipient offline: store in DB for later delivery, do NOT deliver now
-          await PrivateMessage.create({
-            conversation_id: conversation.id,
-            sender_id: sender.userId,
-            receiver_id: toUserId,
+        try {
+          // Find or create conversation
+          let [existingConv] = await pool.execute(
+            `SELECT * FROM private_conversations 
+             WHERE (participant1 = ? AND participant2 = ?) 
+                OR (participant1 = ? AND participant2 = ?)`,
+            [sender.userId, toUserId, toUserId, sender.userId]
+          );
+
+          let conversation;
+          if (existingConv.length > 0) {
+            conversation = existingConv[0];
+          } else {
+            // Create new conversation
+            const [result] = await pool.execute(
+              `INSERT INTO private_conversations (participant1, participant2) VALUES (?, ?)`,
+              [sender.userId, toUserId]
+            );
+            conversation = { id: result.insertId };
+          }
+
+          const time = new Date().toISOString();
+          const recipient = onlineUsers.get(toUserId);
+          
+          // Prepare payload for both sender and recipient
+          const payload = {
+            type: 'private-message',
+            fromUserId: sender.userId,
+            toUserId,
+            fromUsername: sender.username,
             message: privateMsg,
             time,
-            file_url: fileUrl || null,
-            file_type: fileType || null,
-            filename: filename || null
-          });
+            chatKey: `chat_${[sender.userId, toUserId].sort().join('_')}`,
+            file: file || null,
+            fileUrl: fileUrl || null,
+            filename: filename || null,
+            fileType: fileType || null
+          };
+          
+          if (recipient && recipient.ws && recipient.ws.readyState === WebSocket.OPEN) {
+            // Recipient online: deliver instantly, do NOT store in DB
+            recipient.ws.send(JSON.stringify(payload));
+          } else {
+            // Recipient offline: store in DB for later delivery
+            await pool.execute(
+              `INSERT INTO private_messages (conversation_id, sender_id, receiver_id, message, time, file_url, file_type, filename) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [conversation.id, sender.userId, toUserId, privateMsg, time, fileUrl || null, fileType || null, filename || null]
+            );
+          }
+          
+          // Always send echo to sender (this is their own message)
+          ws.send(JSON.stringify(payload));
+        } catch (error) {
+          console.error('Error handling private message:', error);
         }
-        // Always send echo to sender (this is their own message)
-        ws.send(JSON.stringify(payload));
         return;
       }
 
@@ -250,24 +272,37 @@ wss.on('connection', (ws) => {
         const match = chatKey.match(/^chat_(.+)_(.+)$/);
         if (match) {
           const [_, idA, idB] = match;
-          [idA, idB].forEach(async userId => {
-            const user = onlineUsers.get(userId);
-            if (user && user.ws && user.ws.readyState === WebSocket.OPEN) {
-              console.log('Relaying delete-message-for-everyone to user:', userId);
-              user.ws.send(JSON.stringify({
-                type: 'delete-message-for-everyone',
-                chatKey,
-                timestamps
-              }));
-            } else {
-              console.log('User offline, storing pending delete for:', userId);
-              // Create PendingDelete and PendingDeleteTimestamp entries
-              const pendingDelete = await PendingDelete.create({ user_id: userId, chat_key: chatKey });
-              for (const ts of timestamps) {
-                await PendingDeleteTimestamp.create({ pending_delete_id: pendingDelete.id, message_timestamp: ts });
+          
+          try {
+            for (const userId of [idA, idB]) {
+              const user = onlineUsers.get(userId);
+              if (user && user.ws && user.ws.readyState === WebSocket.OPEN) {
+                console.log('Relaying delete-message-for-everyone to user:', userId);
+                user.ws.send(JSON.stringify({
+                  type: 'delete-message-for-everyone',
+                  chatKey,
+                  timestamps
+                }));
+              } else {
+                console.log('User offline, storing pending delete for:', userId);
+                // Create PendingDelete and PendingDeleteTimestamp entries
+                const [result] = await pool.execute(
+                  `INSERT INTO pending_deletes (user_id, chat_key) VALUES (?, ?)`,
+                  [userId, chatKey]
+                );
+                
+                const pendingDeleteId = result.insertId;
+                for (const ts of timestamps) {
+                  await pool.execute(
+                    `INSERT INTO pending_delete_timestamps (pending_delete_id, message_timestamp) VALUES (?, ?)`,
+                    [pendingDeleteId, ts]
+                  );
+                }
               }
             }
-          });
+          } catch (error) {
+            console.error('Error handling delete message for everyone:', error);
+          }
         }
         return;
       }
@@ -286,13 +321,39 @@ wss.on('connection', (ws) => {
     };
     console.log(`Received: ${user.username} [${time}]: ${message}`);
     
-    // TODO: Update ChatMessages to use Sequelize
-    // Save chat message to the database (push to user's messages array)
-    // ChatMessages.findOneAndUpdate(
-    //   { userId: user.userId },
-    //   { $push: { messages: { message: message.toString() } } },
-    //   { upsert: true, new: true }
-    // ).catch(err => console.error('Error saving chat message:', err));
+    // Save chat message to the database
+    try {
+      // Find or create a chat_messages record for this user
+      let [existingChatMessage] = await pool.execute(
+        `SELECT * FROM chat_messages WHERE user_id = ?`,
+        [user.userId]
+      );
+
+      let chatMessageId;
+      if (existingChatMessage.length > 0) {
+        chatMessageId = existingChatMessage[0].id;
+        // Update username in case it changed
+        await pool.execute(
+          `UPDATE chat_messages SET username = ? WHERE id = ?`,
+          [user.username, chatMessageId]
+        );
+      } else {
+        // Create new chat_messages record
+        const [result] = await pool.execute(
+          `INSERT INTO chat_messages (user_id, username) VALUES (?, ?)`,
+          [user.userId, user.username]
+        );
+        chatMessageId = result.insertId;
+      }
+
+      // Insert the message entry
+      await pool.execute(
+        `INSERT INTO chat_message_entries (chat_message_id, message, time) VALUES (?, ?, ?)`,
+        [chatMessageId, message.toString(), new Date()]
+      );
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+    }
     
     // Broadcast the message to all connected clients
     broadcastMessage(chatMsg);

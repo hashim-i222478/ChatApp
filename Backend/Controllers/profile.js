@@ -1,4 +1,6 @@
-const User = require('../Models/Sequelize/User');
+// const User = require('../Models/Sequelize/User');
+// MySQL connection
+const pool = require('../db');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const fs = require('fs');
@@ -25,7 +27,11 @@ exports.UpdateUserProfile = async (req, res) => {
         console.log('Processing uploaded file:', req.file.filename);
         
         // Get current user to find the previous profile picture
-        const currentUser = await User.findByPk(req.user.id);
+        const [currentUserResult] = await pool.execute(
+          `SELECT * FROM users WHERE id = ?`,
+          [req.user.id]
+        );
+        const currentUser = currentUserResult[0];
         
         if (currentUser && currentUser.profile_pic) {
           // Extract filename from path
@@ -56,17 +62,25 @@ exports.UpdateUserProfile = async (req, res) => {
       if (updates.pin) {
         updates.pin = await bcrypt.hash(updates.pin, 10);
       }
-  
-      const user = await User.update(
-        updates,
-        { 
-          where: { id: req.user.id },
-          returning: true
-        }
-      );
+
+      // Update user using raw SQL
+      if (Object.keys(updates).length > 0) {
+        const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(updates);
+        values.push(req.user.id);
+        
+        await pool.execute(
+          `UPDATE users SET ${setClause} WHERE id = ?`,
+          values
+        );
+      }
 
       // Get the updated user data
-      const updatedUser = await User.findByPk(req.user.id);
+      const [updatedUserResult] = await pool.execute(
+        `SELECT * FROM users WHERE id = ?`,
+        [req.user.id]
+      );
+      const updatedUser = updatedUserResult[0];
   
       if (!updatedUser) {
         return res.status(404).json({ message: 'User not found' });
@@ -99,7 +113,12 @@ exports.UpdateUserProfile = async (req, res) => {
 // In your controller (e.g., ManageUsers.js or profile.js)
 exports.getProfilePic = async (req, res) => {
   try {
-    const user = await User.findOne({ where: { user_id: req.params.userId } });
+    const [userResult] = await pool.execute(
+      `SELECT * FROM users WHERE user_id = ?`,
+      [req.params.userId]
+    );
+    const user = userResult[0];
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
