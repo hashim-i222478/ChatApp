@@ -1,15 +1,13 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Login from './Components/Login';
 import SignUp from './Components/SignUp';
-import Chat from './Components/Chat';
 import UpdateProfile from './Components/UpdateProfile';
 import ViewProfile from './Components/ViewProfile';
 import Home from './Components/Home';
-import OnlineUsers from './Components/OnlineUsers';
 import PrivateChat from './Components/PrivateChat';
 import RecentChats from './Components/RecentChats';
+import FriendsList from './Components/FriendsList';
 import { WebSocketProvider } from './Context/WebSocketContext';
 
 function App() {
@@ -33,14 +31,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route 
-              path="/chat" 
-              element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              } 
-            />
+            
             <Route 
               path="/update-profile" 
               element={
@@ -57,14 +48,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
+            {/* <Route 
               path="/online-users" 
               element={
                 <ProtectedRoute>
                   <OnlineUsers />
                 </ProtectedRoute>
               } 
-            />
+            /> */}
             <Route 
               path="/private-chat/:userId" 
               element={
@@ -78,6 +69,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <RecentChats />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/friends" 
+              element={
+                <ProtectedRoute>
+                  <FriendsList />
                 </ProtectedRoute>
               } 
             />

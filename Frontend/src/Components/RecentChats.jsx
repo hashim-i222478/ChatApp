@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './header';
 import { FaSearch, FaTrashAlt } from 'react-icons/fa';
+import { friendsStorage } from '../Services/friendsStorage';
 import '../Style/recentChats.css';
 
 // Helper to safely parse date strings
@@ -14,9 +15,15 @@ function getValidDateString(time) {
 // Helper to fetch usernames and profile pics for a list of chats
 const fetchUsernames = async (chatsToUpdate, setChats) => {
   const token = localStorage.getItem('token');
+  const friends = friendsStorage.getFriends();
+  
   const updatedChats = await Promise.all(
     chatsToUpdate.map(async (chat) => {
       try {
+        // Check if this user is a friend and has an alias
+        const friend = friends.find(f => f.idofuser === chat.userId);
+        const displayName = friend?.alias || chat.userId;
+        
         const res = await fetch(`http://localhost:8080/api/users/username/${chat.userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -25,6 +32,10 @@ const fetchUsernames = async (chatsToUpdate, setChats) => {
           const data = await res.json();
           username = data.username || chat.userId;
         }
+        
+        // Use alias if available, otherwise use username
+        const finalDisplayName = friend?.alias || username;
+        
         // Fetch profile pic
         let profilePic = '';
         try {
@@ -36,7 +47,13 @@ const fetchUsernames = async (chatsToUpdate, setChats) => {
             profilePic = picData.profilePic || '';
           }
         } catch {}
-        return { ...chat, username, profilePic };
+        return { 
+          ...chat, 
+          username: finalDisplayName, 
+          actualUsername: username,
+          hasAlias: !!friend?.alias,
+          profilePic 
+        };
       } catch {
         return chat;
       }
@@ -195,68 +212,82 @@ const RecentChats = () => {
     : recentChats;
 
   // ChatItem component for rendering individual recent chat entries
-  const ChatItem = ({ chat, handleChatClick }) => (
-    <li
-      className="chat-item"
-      onClick={() => handleChatClick(chat)}
-      title={`Continue chat with ${chat.username}`}
-    >
-      <div className="user-avatar">
-        {chat.profilePic ? (
-          <img 
-            src={chat.profilePic.startsWith('/uploads/') 
-              ? `http://localhost:8080${chat.profilePic}` 
-              : chat.profilePic} 
-            alt={chat.username} 
-            className="avatar-img" 
-            loading="lazy"
-          />
-        ) : (
-          <div className="initial-circle">{chat.username[0] ? chat.username[0].toUpperCase() : '?'}</div>
-        )}
-      </div>
-      <div className="user-details">
-        <div className="user-info">
-          <span className="username">{chat.username}</span>
-          <span className="userid">@{chat.userId}</span>
-        </div>
-        <div className="last-message-preview">
-          {chat.lastMessage ? (
-            <>
-              <span className="message-text">
-                {chat.lastMessageSender ? `${chat.lastMessageSender}: ` : ''}
-                {chat.lastMessage.length > 28
-                  ? chat.lastMessage.slice(0, 28) + '...'
-                  : chat.lastMessage}
-              </span>
-              <span className="message-time">
-                {chat.lastMessageTime
-                  ? new Date(chat.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : ''}
-              </span>
-            </>
+  const ChatItem = ({ chat, handleChatClick }) => {
+    // Check if this user is in the friends list
+    const isFriend = friendsStorage.isFriend(chat.userId);
+    
+    return (
+      <li
+        className="chat-item"
+        onClick={() => handleChatClick(chat)}
+        title={`Continue chat with ${chat.username}`}
+      >
+        <div className="user-avatar">
+          {chat.profilePic ? (
+            <img 
+              src={chat.profilePic.startsWith('/uploads/') 
+                ? `http://localhost:8080${chat.profilePic}` 
+                : chat.profilePic} 
+              alt={chat.username} 
+              className="avatar-img" 
+              loading="lazy"
+            />
           ) : (
-            <span className="no-message">No messages yet.</span>
+            <div className="initial-circle">{chat.username[0] ? chat.username[0].toUpperCase() : '?'}</div>
           )}
         </div>
-      </div>
-      <div className="chat-actions">
-        {chat.unreadCount > 0 && (
-          <span className="unread-count" aria-label={`${chat.unreadCount} unread messages`}>
-            {chat.unreadCount}
-          </span>
-        )}
-        <button 
-          className="delete-chat-btn" 
-          onClick={(e) => handleDeleteChat(chat, e)}
-          title="Delete this chat"
-          aria-label={`Delete chat with ${chat.username}`}
-        >
-          <FaTrashAlt className="delete-icon" />
-        </button>
-      </div>
-    </li>
-  );
+        <div className="user-details">
+          <div className="user-info">
+            <span className={`username ${isFriend ? 'friend-name' : 'non-friend-name'}`}>
+              {chat.hasAlias ? (
+                <>
+                  <span className="chat-alias">{chat.username}</span>
+                  <span className="chat-actual-username">({chat.actualUsername})</span>
+                </>
+              ) : (
+                chat.username
+              )}
+            </span>
+            <span className="userid">@{chat.userId}</span>
+          </div>
+          <div className="last-message-preview">
+            {chat.lastMessage ? (
+              <>
+                <span className="message-text">
+                  {chat.lastMessageSender ? `${chat.lastMessageSender}: ` : ''}
+                  {chat.lastMessage.length > 28
+                    ? chat.lastMessage.slice(0, 28) + '...'
+                    : chat.lastMessage}
+                </span>
+                <span className="message-time">
+                  {chat.lastMessageTime
+                    ? new Date(chat.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : ''}
+                </span>
+              </>
+            ) : (
+              <span className="no-message">No messages yet.</span>
+            )}
+          </div>
+        </div>
+        <div className="chat-actions">
+          {chat.unreadCount > 0 && (
+            <span className="unread-count" aria-label={`${chat.unreadCount} unread messages`}>
+              {chat.unreadCount}
+            </span>
+          )}
+          <button 
+            className="delete-chat-btn" 
+            onClick={(e) => handleDeleteChat(chat, e)}
+            title="Delete this chat"
+            aria-label={`Delete chat with ${chat.username}`}
+          >
+            <FaTrashAlt className="delete-icon" />
+          </button>
+        </div>
+      </li>
+    );
+  };
 
   // EmptyState component for when no chats are available
   const EmptyState = () => (

@@ -182,6 +182,30 @@
     margin-right: 0.5rem;
 }
 
+/* Friend vs Non-Friend Name Styling */
+.username.friend-name {
+    font-style: normal;
+    color: #111827;
+}
+
+.username.non-friend-name {
+    font-style: italic;
+    color: #6b7280;
+}
+
+/* Alias and Username Styling in Recent Chats */
+.chat-alias {
+    font-weight: 600;
+    color: inherit;
+}
+
+.chat-actual-username {
+    font-weight: 400;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-left: 0.25rem;
+}
+
 .userid {
     font-size: 0.75rem;
     color: #6b7280;
@@ -516,6 +540,28 @@
     .username {
         font-size: 0.8125rem;
         margin-right: 0.35rem;
+    }
+
+    .username.friend-name {
+        font-style: normal;
+        color: #111827;
+    }
+
+    .username.non-friend-name {
+        font-style: italic;
+        color: #6b7280;
+    }
+
+    .chat-alias {
+        font-weight: 600;
+        color: inherit;
+    }
+
+    .chat-actual-username {
+        font-weight: 400;
+        color: #6b7280;
+        font-size: 0.75rem;
+        margin-left: 0.25rem;
     }
 
     .userid {

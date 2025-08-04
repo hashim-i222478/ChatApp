@@ -1,9 +1,3 @@
-// const PrivateConversation = require('../Models/Sequelize/PrivateConversation');
-// const PrivateMessage = require('../Models/Sequelize/PrivateMessage');
-// const User = require('../Models/Sequelize/User');
-// const { ChatMessage, ChatMessageEntry } = require('../Models');
-// const { Op } = require('sequelize');
-// MySQL connection
 const pool = require('../db');
 
 //get all chat messages

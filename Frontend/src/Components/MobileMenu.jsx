@@ -1,10 +1,10 @@
-import React from "react";
-import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout, AiOutlineClose } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout, AiOutlineClose, AiOutlineUserAdd } from 'react-icons/ai';
 
 const MobileMenu = ({ navItems, isOpen, onClose, onLogout, location, navigate, isLoggingOut }) => {
     const IconComponent = {
         'AiOutlineHome': AiOutlineHome,
         'AiOutlineMessage': AiOutlineMessage,
+        'AiOutlineUserAdd': AiOutlineUserAdd,
         'AiOutlineGlobal': AiOutlineGlobal,
         'AiOutlineUser': AiOutlineUser,
         'AiOutlineEdit': AiOutlineEdit,

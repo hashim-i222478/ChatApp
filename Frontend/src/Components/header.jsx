@@ -4,6 +4,7 @@ import Logo from './Logo';
 import Navbar from './Navbar';
 import MobileMenu from './MobileMenu';
 import { AiOutlineBell, AiOutlineUser, AiOutlineLogout } from 'react-icons/ai';
+import { friendsStorage } from '../Services/friendsStorage';
 import '../Style/header.css';
 
 const Header = () => {
@@ -120,11 +121,14 @@ const Header = () => {
             localStorage.removeItem('username');
             localStorage.removeItem('email');
             localStorage.removeItem('userId');
+            // Clear friends cache on logout
+            friendsStorage.clearFriends();
             console.log('LocalStorage after logout:', {
                 token: localStorage.getItem('token'),
                 username: localStorage.getItem('username'),
                 email: localStorage.getItem('email'),
                 userId: localStorage.getItem('userId'),
+                friends: localStorage.getItem('friends')
             });
             setIsLoggingOut(false);
             navigate('/login', { replace: true });
@@ -135,8 +139,7 @@ const Header = () => {
     const navItems = [
         { path: '/', icon: 'AiOutlineHome', label: 'Home' },
         { path: '/recent-chats', icon: 'AiOutlineMessage', label: 'Recent Chats' },
-        { path: '/chat', icon: 'AiOutlineGlobal', label: 'Global Chats' },
-        { path: '/online-users', icon: 'AiOutlineTeam', label: 'Online Users' },
+        { path: '/friends', icon: 'AiOutlineTeam', label: 'Friends' }
     ];
 
     const handleOpenSidebar = () => {

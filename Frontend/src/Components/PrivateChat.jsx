@@ -6,8 +6,9 @@ import '../Style/privateChat.css';
 import axios from 'axios';
 import { FaTrash, FaPaperPlane, FaSmile, FaPaperclip, FaArrowLeft, FaCheckSquare, 
          FaTimes, FaUserAlt, FaExclamationTriangle, FaUserSecret, FaFileAlt,
-         FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAudio, FaFileVideo, FaRegCheckSquare  } from 'react-icons/fa';
+         FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAudio, FaFileVideo, FaRegCheckSquare, FaUserPlus  } from 'react-icons/fa';
 import { set } from 'mongoose';
+import { friendsStorage } from '../Services/friendsStorage';
 
 const MessageItem = ({ msg, onMediaClick }) => {
   if (msg.system) {
@@ -122,6 +123,10 @@ const PrivateChat = () => {
   const [selectedMessages, setSelectedMessages] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteNotification, setShowDeleteNotification] = useState(false);
+  const [isFriend, setIsFriend] = useState(false);
+  const [showAddFriendNotification, setShowAddFriendNotification] = useState(false);
+  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+  const [friendAlias, setFriendAlias] = useState('');
 
   // --- Step 1: Media selection state ---
   const [selectedFile, setSelectedFile] = useState(null);
@@ -130,6 +135,7 @@ const PrivateChat = () => {
   const targetUserId = state?.userId || targetUserIdParam;
   const targetUsername = state?.username || 'User';
   const [profilePic, setProfilePic] = useState('');
+  const [displayName, setDisplayName] = useState(targetUsername);
 
   // Use a consistent chatKey for both users
   const chatKey = `chat_${[myUserId, targetUserId].sort().join('_')}`;
@@ -154,9 +160,72 @@ const PrivateChat = () => {
     fetchProfilePic();
   }, [targetUserId]);
 
+  // Check if user is a friend
+  useEffect(() => {
+    const checkFriendStatus = () => {
+      const isUserFriend = friendsStorage.isFriend(targetUserId);
+      setIsFriend(isUserFriend);
+      
+      // Update display name based on friend status and alias
+      const friends = friendsStorage.getFriends();
+      const friend = friends.find(f => f.idofuser === targetUserId);
+      if (friend && friend.alias) {
+        setDisplayName(friend.alias);
+      } else {
+        setDisplayName(targetUsername);
+      }
+    };
+    
+    checkFriendStatus();
+    
+    // Listen for friends list updates
+    const handleFriendsUpdate = () => {
+      checkFriendStatus();
+      // Also refresh messages to show updated aliases
+      const localMsgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+      const friends = friendsStorage.getFriends();
+      
+      const formatted = localMsgs.map(msg => {
+        if (msg.system) {
+          return {
+            system: true,
+            message: msg.message,
+            time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
+          };
+        }
+        
+        // Check if the message sender is a friend with an alias
+        let displayUsername = msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername);
+        if (msg.fromUserId !== myUserId) {
+          const friend = friends.find(f => f.idofuser === msg.fromUserId);
+          if (friend && friend.alias) {
+            displayUsername = friend.alias;
+          }
+        }
+        
+        return {
+          from: msg.fromUserId === myUserId ? 'me' : 'them',
+          text: msg.message || '',
+          time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
+          username: displayUsername,
+          file: msg.file || null,
+          fileUrl: msg.fileUrl || null,
+          fileType: msg.fileType || null,
+          filename: msg.filename || null
+        };
+      });
+      setMessages(formatted);
+    };
+    
+    window.addEventListener('friends-updated', handleFriendsUpdate);
+    return () => window.removeEventListener('friends-updated', handleFriendsUpdate);
+  }, [targetUserId, chatKey, myUserId, myUsername, targetUsername]);
+
   // Load local messages + fetch from DB if needed
   useEffect(() => {
     const localMsgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+    const friends = friendsStorage.getFriends();
+    
     const formatted = localMsgs.map(msg => {
       if (msg.system) {
         return {
@@ -165,11 +234,21 @@ const PrivateChat = () => {
           time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
         };
       }
+      
+      // Check if the message sender is a friend with an alias
+      let displayUsername = msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername);
+      if (msg.fromUserId !== myUserId) {
+        const friend = friends.find(f => f.idofuser === msg.fromUserId);
+        if (friend && friend.alias) {
+          displayUsername = friend.alias;
+        }
+      }
+      
       return {
         from: msg.fromUserId === myUserId ? 'me' : 'them',
         text: msg.message || '',
         time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
-        username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername),
+        username: displayUsername,
         file: msg.file || null,
         fileUrl: msg.fileUrl || null,
         fileType: msg.fileType || null,
@@ -177,12 +256,14 @@ const PrivateChat = () => {
       };
     });
     setMessages(formatted);
-  }, [targetUserId]);
+  }, [targetUserId, myUserId, myUsername, targetUsername]);
 
   useEffect(() => {
     const handleMessageReceived = (e) => {
       if (e.detail.chatKey === chatKey) {
         const localMsgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+        const friends = friendsStorage.getFriends();
+        
         const formatted = localMsgs.map(msg => {
           if (msg.system) {
             return {
@@ -191,11 +272,21 @@ const PrivateChat = () => {
               time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
             };
           }
+          
+          // Check if the message sender is a friend with an alias
+          let displayUsername = msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername);
+          if (msg.fromUserId !== myUserId) {
+            const friend = friends.find(f => f.idofuser === msg.fromUserId);
+            if (friend && friend.alias) {
+              displayUsername = friend.alias;
+            }
+          }
+          
           return {
             from: msg.fromUserId === myUserId ? 'me' : 'them',
             text: msg.message || '',
             time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
-            username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername),
+            username: displayUsername,
             file: msg.file || null,
             fileUrl: msg.fileUrl || null,
             fileType: msg.fileType || null,
@@ -253,6 +344,8 @@ const PrivateChat = () => {
     const handleProfileUpdate = (e) => {
       // Reload messages from localStorage to get updated usernames
       const localMsgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+      const friends = friendsStorage.getFriends();
+      
       const formatted = localMsgs.map(msg => {
         if (msg.system) {
           return {
@@ -261,11 +354,21 @@ const PrivateChat = () => {
             time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
           };
         }
+        
+        // Check if the message sender is a friend with an alias
+        let displayUsername = msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername);
+        if (msg.fromUserId !== myUserId) {
+          const friend = friends.find(f => f.idofuser === msg.fromUserId);
+          if (friend && friend.alias) {
+            displayUsername = friend.alias;
+          }
+        }
+        
         return {
           from: msg.fromUserId === myUserId ? 'me' : 'them',
           text: msg.message,
           time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
-          username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername)
+          username: displayUsername
         };
       });
       setMessages(formatted);
@@ -400,7 +503,9 @@ const PrivateChat = () => {
     const updated = msgs.filter(msg => !selectedMessages.includes(isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()));
     console.log('After delete (for me), localStorage:', updated);
     localStorage.setItem(chatKey, JSON.stringify(updated));
-    // Update messages state
+    
+    // Update messages state with alias checking
+    const friends = friendsStorage.getFriends();
     const formatted = updated.map(msg => {
       if (msg.system) {
         return {
@@ -409,11 +514,21 @@ const PrivateChat = () => {
           time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
         };
       }
+      
+      // Check if the message sender is a friend with an alias
+      let displayUsername = msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername);
+      if (msg.fromUserId !== myUserId) {
+        const friend = friends.find(f => f.idofuser === msg.fromUserId);
+        if (friend && friend.alias) {
+          displayUsername = friend.alias;
+        }
+      }
+      
       return {
         from: msg.fromUserId === myUserId ? 'me' : 'them',
         text: msg.message,
         time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
-        username: msg.username || (msg.fromUserId === myUserId ? myUsername : targetUsername)
+        username: displayUsername
       };
     });
     setMessages(formatted);
@@ -473,6 +588,69 @@ const PrivateChat = () => {
     }
   };
 
+  // Handler for adding user as friend
+  const handleAddFriend = () => {
+    setShowAddFriendModal(true);
+    setFriendAlias('');
+  };
+
+  // Handler for submitting add friend with alias
+  const handleAddFriendSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch('http://localhost:8080/api/friends/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          friendUserId: targetUserId,
+          alias: friendAlias.trim() || null
+        })
+      });
+      
+      if (res.ok) {
+        const responseData = await res.json();
+        
+        // Refresh friends list from API to get complete data including profile pictures
+        const token = localStorage.getItem('token');
+        if (token) {
+          await friendsStorage.fetchAndStoreFriends(token);
+        } else {
+          // Fallback: Add friend to localStorage if no token
+          friendsStorage.addFriend(responseData.friend);
+        }
+        
+        setIsFriend(true);
+        
+        // Show success notification
+        setShowAddFriendNotification(true);
+        setTimeout(() => setShowAddFriendNotification(false), 3000);
+        
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('friends-updated'));
+        
+        // Close modal
+        setShowAddFriendModal(false);
+        setFriendAlias('');
+      } else {
+        const errorData = await res.json();
+        console.error('Failed to add friend:', errorData.message);
+      }
+    } catch (error) {
+      console.error('Error adding friend:', error);
+    }
+  };
+
+  // Handler for closing add friend modal
+  const handleCloseAddFriendModal = () => {
+    setShowAddFriendModal(false);
+    setFriendAlias('');
+  };
+
   return (
     <div className="private-chat-page">
       <Header />
@@ -489,12 +667,12 @@ const PrivateChat = () => {
                     src={profilePic.startsWith('/uploads/') 
                       ? `http://localhost:8080${profilePic}` 
                       : profilePic} 
-                    alt={targetUsername} 
+                    alt={displayName} 
                     className="avatar-img" 
                     loading="lazy"
                   />
                 ) : (
-                  <div className="initial-circle">{targetUsername[0] ? targetUsername[0].toUpperCase() : '?'}</div>
+                  <div className="initial-circle">{displayName[0] ? displayName[0].toUpperCase() : '?'}</div>
                 )}
                 {onlineUsers.some(u => u.userId === targetUserId) && (
                   <span className="online-status-indicator"></span>
@@ -502,7 +680,9 @@ const PrivateChat = () => {
               </div>
             </div>
             <div className="user-details">
-              <h1 className="chat-title"><span>{targetUsername}</span></h1>
+              <h1 className={`chat-title ${isFriend ? 'friend-name' : 'non-friend-name'}`}>
+                <span>{displayName}</span>
+              </h1>
               {someoneTyping ? (
                 <div className="typing-status">{someoneTyping} is typing...</div>
               ) : (
@@ -513,6 +693,16 @@ const PrivateChat = () => {
             </div>
           </div>
           <div className="chat-header-actions">
+            {!isFriend && (
+              <button 
+                className="add-friend-btn" 
+                onClick={handleAddFriend}
+                title="Add as friend"
+              >
+                <FaUserPlus />
+                <span className="button-text">Add Friend</span>
+              </button>
+            )}
             {selectedMessages.length > 0 && (
               <button className="delete-selected-btn" title="Delete selected messages" onClick={() => setShowDeleteModal(true)}>
                 <FaTrash />
@@ -611,6 +801,43 @@ const PrivateChat = () => {
             </div>
           </div>
         )}
+
+        {/* Add Friend Modal */}
+        {showAddFriendModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Add {displayName} as Friend</h3>
+                <button className="modal-close" onClick={handleCloseAddFriendModal}>
+                  <FaTimes />
+                </button>
+              </div>
+              <form onSubmit={handleAddFriendSubmit}>
+                <div className="modal-body">
+                  <p>Would you like to add an alias (nickname) for <strong>{displayName}</strong>?</p>
+                  <p className="modal-subtitle">You can leave this blank to use their username.</p>
+                  <input
+                    type="text"
+                    value={friendAlias}
+                    onChange={(e) => setFriendAlias(e.target.value)}
+                    placeholder={`Enter alias for ${displayName} (optional)`}
+                    className="modal-input"
+                    autoFocus
+                    maxLength={50}
+                  />
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="modal-btn cancel" onClick={handleCloseAddFriendModal}>
+                    <FaTimes /> Cancel
+                  </button>
+                  <button type="submit" className="modal-btn add-friend">
+                    <FaUserPlus /> Add Friend
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         {/* --- Step 1: File preview UI --- */}
         {selectedFile && (
           <div className="media-preview-bar" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, background: '#f3f4f6', borderRadius: 8, padding: 8 }}>
@@ -645,6 +872,14 @@ const PrivateChat = () => {
           <div className="delete-notification">
             <FaTrash className="notification-icon" />
             <span>Message{selectedMessages.length > 1 ? 's' : ''} deleted successfully</span>
+          </div>
+        )}
+        
+        {/* Add Friend Notification */}
+        {showAddFriendNotification && (
+          <div className="add-friend-notification">
+            <FaUserPlus className="notification-icon" />
+            <span>{displayName} added as friend successfully</span>
           </div>
         )}
         

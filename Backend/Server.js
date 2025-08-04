@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./Routes/userRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
+const friendsRoutes = require('./Routes/friendsRoutes');
 
 const wss = require('./wsServer');
 const path = require('path');
@@ -34,6 +35,11 @@ const onlineUsers = new Map(); // userId -> { username, ws }
 function getCurrentTime() {
   const now = new Date();
   return now.toLocaleTimeString([], { hour12: false });
+}
+
+function getMySQLDateTime() {
+  const now = new Date();
+  return now.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 function broadcastOnlineUsers() {
@@ -226,7 +232,8 @@ wss.on('connection', (ws) => {
             conversation = { id: result.insertId };
           }
 
-          const time = new Date().toISOString();
+          const time = getMySQLDateTime();
+          const timeISO = new Date().toISOString();
           const recipient = onlineUsers.get(toUserId);
           
           // Prepare payload for both sender and recipient
@@ -236,7 +243,7 @@ wss.on('connection', (ws) => {
             toUserId,
             fromUsername: sender.username,
             message: privateMsg,
-            time,
+            time: timeISO,
             chatKey: `chat_${[sender.userId, toUserId].sort().join('_')}`,
             file: file || null,
             fileUrl: fileUrl || null,
@@ -396,6 +403,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads/private-media', express.static(path.join(__dirname, 'uploads/private-media')));
 app.use('/api/users', userRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/friends', friendsRoutes);
 app.get('/', (req, res) => {
   res.send('Welcome to the Chat Server');
 });

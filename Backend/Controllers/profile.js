@@ -1,5 +1,4 @@
-// const User = require('../Models/Sequelize/User');
-// MySQL connection
+
 const pool = require('../db');
 const bcrypt = require('bcrypt');
 const axios = require('axios');

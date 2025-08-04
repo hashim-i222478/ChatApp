@@ -1,10 +1,10 @@
-import React from "react";
-import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineMessage, AiOutlineGlobal, AiOutlineUser, AiOutlineEdit, AiOutlineTeam, AiOutlineLogout, AiOutlineUserAdd } from 'react-icons/ai';
 
 const Navbar = ({ navItems, location, navigate }) => {
     const IconComponent = {
         'AiOutlineHome': AiOutlineHome,
         'AiOutlineMessage': AiOutlineMessage,
+        'AiOutlineUserAdd': AiOutlineUserAdd,
         'AiOutlineGlobal': AiOutlineGlobal,
         'AiOutlineUser': AiOutlineUser,
         'AiOutlineEdit': AiOutlineEdit,

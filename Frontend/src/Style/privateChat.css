@@ -72,6 +72,7 @@
 }
 
 .initial-circle {
+    position: relative;
     width: 100%;
     height: 100%;
     display: flex;
@@ -85,15 +86,15 @@
 
 .online-status-indicator {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 12px;
-    height: 12px;
-    background-color: #10b981;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-    z-index: 2;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: #10b981;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s infinite;
 }
 
 .user-details {
@@ -149,6 +150,15 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: 700;
+}
+
+/* Friend vs Non-Friend Name Styling */
+.chat-title.friend-name span {
+    font-style: normal;
+}
+
+.chat-title.non-friend-name span {
+    font-style: italic;
 }
 
 .typing-status {
@@ -392,6 +402,7 @@
     position: relative;
     border: 1px solid #e5e7eb;
     transition: all 0.3s ease;
+    margin-top: 1rem;
 
 }
 
@@ -618,6 +629,48 @@
     color: #b91c1c;
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.15);
+}
+
+/* Add Friend Button */
+.add-friend-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+    border-radius: 2rem;
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 640px) {
+    .add-friend-btn {
+        width: auto;
+        height: auto;
+        padding: 0.5rem 1rem;
+    }
+    
+    .add-friend-btn .button-text {
+        display: inline;
+    }
+}
+
+.add-friend-btn .button-text {
+    display: none;
+}
+
+.add-friend-btn:hover, .add-friend-btn:focus {
+    background: #dcfce7;
+    color: #15803d;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 8px rgba(22, 163, 74, 0.15);
 }
 
 .chat-box input[type="checkbox"] {
@@ -1186,6 +1239,60 @@ input[type="checkbox"]:hover:not(:checked) {
   font-weight: 500;
 }
 
+/* Add Friend Notification */
+.add-friend-notification {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUpFadeIn 0.3s ease-out, slideDownFadeOut 0.3s ease-in 2.7s forwards;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Modal styles for add friend */
+.modal-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background: #ffffff;
+  color: #1f2937;
+  transition: border-color 0.2s;
+  margin-bottom: 1rem;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.modal-btn.add-friend {
+  background: linear-gradient(90deg, #16a34a, #15803d);
+  color: white;
+}
+
+.modal-btn.add-friend:hover {
+  background: linear-gradient(90deg, #15803d, #166534);
+}
+
 .notification-icon {
   font-size: 1rem;
   color: red;
@@ -1218,6 +1325,14 @@ input[type="checkbox"]:hover:not(:checked) {
 /* Responsive styles for delete notification */
 @media (max-width: 480px) {
   .delete-notification {
+    bottom: 1.5rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.8rem;
+    border-radius: 1.5rem;
+    max-width: 90%;
+  }
+  
+  .add-friend-notification {
     bottom: 1.5rem;
     padding: 0.6rem 1.25rem;
     font-size: 0.8rem;

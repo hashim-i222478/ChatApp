@@ -1,32 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation} from 'react-router-dom';
 import Header from './header';
-import { AiOutlineMessage, AiOutlineTeam, AiOutlineClockCircle, AiOutlineLock, AiOutlineCopy } from 'react-icons/ai';
+import AddFriendModal from './AddFriendModal';
+import { AiOutlineMessage, AiOutlineTeam, AiOutlineClockCircle, AiOutlineLock, AiOutlineCopy, AiOutlineUserAdd } from 'react-icons/ai';
 import { BsShieldLock, BsFillTrashFill } from 'react-icons/bs';
+import { friendsStorage } from '../Services/friendsStorage';
 import '../Style/home.css';
-
-// // Helper to fetch username for a userId
-// const fetchUsername = async (userId, token) => {
-//   try {
-//     const res = await fetch(`http://localhost:8080/api/users/username/${userId}`, {
-//       headers: { Authorization: `Bearer ${token}` }
-//     });
-//     if (!res.ok) throw new Error('Failed to fetch username');
-//     const data = await res.json();
-//     return data.username || userId;
-//   } catch {
-//     return userId;
-//   }
-// };
 
 const Home = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const [userId, setUserId] = useState('');
   const [username, setUsername] = useState('');
   const [chatUserId, setChatUserId] = useState('');
+  const [friendUserId, setFriendUserId] = useState('');
+  const [friendAlias, setFriendAlias] = useState('');
   const [animatedWelcome, setAnimatedWelcome] = useState('');
   const [copied, setCopied] = useState(false);
+  const [popup, setPopup] = useState({ show: false, message: '', type: '' });
   const location = useLocation();
   const [profilePicUrl, setProfilePicUrl] = useState('');
 
@@ -87,6 +79,24 @@ const Home = () => {
     setChatUserId('');
   };
 
+  const handleAddFriend = () => {
+    setIsFriendsModalOpen(true);
+    setFriendUserId('');
+    setFriendAlias('');
+  };
+  const handleCloseFriendsModal = () => {
+    setIsFriendsModalOpen(false);
+    setFriendUserId('');
+    setFriendAlias('');
+  };
+
+  const showPopup = (message, type = 'success') => {
+    setPopup({ show: true, message, type });
+    setTimeout(() => {
+      setPopup({ show: false, message: '', type: '' });
+    }, 3000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (chatUserId.trim()) {
@@ -106,6 +116,47 @@ const Home = () => {
         navigate(`/private-chat/${chatUserId}`, { state: { username: 'User', userId: chatUserId } });
       }
       handleCloseModal();
+    }
+  };
+
+  const handleFriendSubmit = async (e) => {
+    e.preventDefault();
+    if (friendUserId.trim()) {
+      const token = localStorage.getItem('token');
+      
+      // Check if already a friend using localStorage
+      if (friendsStorage.isFriend(friendUserId.trim())) {
+        showPopup('User is already in your friends list', 'error');
+        handleCloseFriendsModal();
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:8080/api/friends/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            friendUserId: friendUserId.trim(),
+            alias: friendAlias.trim() || null
+          })
+        });
+        
+        if (res.ok) {
+          const responseData = await res.json();
+          // Add friend to localStorage
+          friendsStorage.addFriend(responseData.friend);
+          showPopup(`Friend added successfully${friendAlias.trim() ? ` as "${friendAlias.trim()}"` : ''}!`, 'success');
+        } else {
+          const errorData = await res.json();
+          showPopup(errorData.message || 'Failed to add friend', 'error');
+        }
+      } catch (error) {
+        showPopup('Error adding friend', 'error');
+      }
+      handleCloseFriendsModal();
     }
   };
 
@@ -146,11 +197,16 @@ const Home = () => {
             {copied && <span className="copy-feedback">Copied!</span>}
           </div>
           <p className="home-subtitle">Connect, Chat, and Collaborate in Real-Time</p>
-          <button className="home-cta" onClick={handleStartChat}>
-            <AiOutlineMessage className="cta-icon" /> Start Chatting Now
-          </button>
+          <div className="home-cta-container">
+            <button className="home-cta" onClick={handleStartChat}>
+              <AiOutlineMessage className="cta-icon" /> Start Chatting Now
+            </button>
+            <button className="home-cta home-cta-friend" onClick={handleAddFriend}>
+              <AiOutlineUserAdd className="cta-icon" /> Add Friend
+            </button>
+          </div>
         </div>
-        <div className="home-features">
+        {/* <div className="home-features">
           <div className="feature-card" onClick={handleOnlineUsers}>
             <AiOutlineTeam className="feature-icon" />
             <h3 className="feature-title">Online Users</h3>
@@ -166,7 +222,7 @@ const Home = () => {
             <h3 className="feature-title">Secure Messaging</h3>
             <p className="feature-description">Your conversations are private and protected.</p>
           </div>
-        </div>
+        </div> */}
 
         {isModalOpen && (
           <div className="modal-overlay">
@@ -197,7 +253,32 @@ const Home = () => {
             </div>
           </div>
         )}
+
+        <AddFriendModal
+          isOpen={isFriendsModalOpen}
+          onClose={handleCloseFriendsModal}
+          friendUserId={friendUserId}
+          setFriendUserId={setFriendUserId}
+          friendAlias={friendAlias}
+          setFriendAlias={setFriendAlias}
+          onSubmit={handleFriendSubmit}
+        />
       </div>
+
+      {/* Custom Popup */}
+      {popup.show && (
+        <div className="popup-overlay">
+          <div className={`popup-content ${popup.type}`}>
+            <div className="popup-message">{popup.message}</div>
+            <button 
+              className="popup-close" 
+              onClick={() => setPopup({ show: false, message: '', type: '' })}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

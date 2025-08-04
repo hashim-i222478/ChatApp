@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '../Services/api';
+import { friendsStorage } from '../Services/friendsStorage';
 import '../Style/login.css';
 
 const Login = () => {
@@ -42,9 +43,16 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(formData);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('username', response.data.username);
-      localStorage.setItem('userId', response.data.userId);
+      const { token, username, userId } = response.data;
+      
+      // Store user data in localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('username', username);
+      localStorage.setItem('userId', userId);
+      
+      // Fetch and store friends in localStorage
+      await friendsStorage.fetchAndStoreFriends(token);
+      
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
