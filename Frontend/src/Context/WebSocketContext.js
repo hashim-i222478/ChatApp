@@ -40,13 +40,14 @@ export const WebSocketProvider = ({ username, children }) => {
           const otherUserId = message.fromUserId === myUserId ? message.toUserId : message.fromUserId;
           const chatKey = `chat_${[myUserId, otherUserId].sort().join('_')}`;
           const current = JSON.parse(localStorage.getItem(chatKey) || '[]');
-          const exists = current.some(m => m.fromUserId === message.fromUserId && m.message === message.message && m.time === message.time);
+          const localTime = message.time; // Already in local time format from server
+          const exists = current.some(m => m.fromUserId === message.fromUserId && m.message === message.message && m.time === localTime);
           if (!exists) {
             current.push({
               fromUserId: message.fromUserId,
               username: message.fromUsername,
               message: message.message,
-              time: message.time ? new Date(message.time).toLocaleTimeString() : '',
+              time: localTime, // Store local time format consistently
               file: message.file,
               fileUrl: message.fileUrl,
               fileType: message.fileType,
@@ -70,10 +71,8 @@ export const WebSocketProvider = ({ username, children }) => {
           const { chatKey, timestamps } = message;
           // chatKey is already in the correct format (chat_<idA>_<idB>)
           const msgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
-          // Remove messages whose time matches any in timestamps
-          const updated = msgs.filter(msg =>
-            !timestamps.includes(isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString())
-          );
+          // timestamps are already in local time format, compare directly
+          const updated = msgs.filter(msg => !timestamps.includes(msg.time));
           localStorage.setItem(chatKey, JSON.stringify(updated));
           // --- Fix: Update unread count for this chat ---
           let unread = JSON.parse(localStorage.getItem('unread_private') || '{}');

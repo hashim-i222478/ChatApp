@@ -34,12 +34,13 @@ const onlineUsers = new Map(); // userId -> { username, ws }
 
 function getCurrentTime() {
   const now = new Date();
-  return now.toLocaleTimeString([], { hour12: false });
+  return now.toISOString();
 }
 
 function getMySQLDateTime() {
   const now = new Date();
-  return now.toISOString().slice(0, 19).replace('T', ' ');
+  // Store local time in database for consistency with display format
+  return now.toLocaleString('sv-SE').replace(' ', ' '); // Returns YYYY-MM-DD HH:mm:ss in local time
 }
 
 function broadcastOnlineUsers() {
@@ -129,12 +130,24 @@ wss.on('connection', (ws) => {
           );
 
           for (const msg of deliverable) {
+            // Convert MySQL datetime to ISO string for consistent client handling
+            let timeISO;
+            if (msg.time instanceof Date) {
+              timeISO = msg.time.toISOString();
+            } else if (typeof msg.time === 'string') {
+              // Handle MySQL datetime string format: "YYYY-MM-DD HH:mm:ss" (stored as UTC)
+              // Add 'Z' to indicate UTC and parse correctly
+              timeISO = new Date(msg.time + 'Z').toISOString();
+            } else {
+              timeISO = new Date().toISOString(); // fallback
+            }
+            
             ws.send(JSON.stringify({
               type: 'private-message',
               fromUserId: msg.sender_id,
               toUserId: msg.receiver_id,
               message: msg.message,
-              time: msg.time instanceof Date ? msg.time.toISOString() : msg.time,
+              time: new Date(timeISO).toLocaleTimeString(), // Send local time format for consistency
               fileUrl: msg.file_url || null,
               fileType: msg.file_type || null,
               filename: msg.filename || null
@@ -166,7 +179,7 @@ wss.on('connection', (ws) => {
             ws.send(JSON.stringify({
               type: 'delete-message-for-everyone',
               chatKey: event.chat_key,
-              timestamps: event.timestamps ? event.timestamps.split(',') : []
+              timestamps: event.timestamps ? event.timestamps.split(',') : [] // These are already in local time format
             }));
           }
 
@@ -232,8 +245,10 @@ wss.on('connection', (ws) => {
             conversation = { id: result.insertId };
           }
 
-          const time = getMySQLDateTime();
-          const timeISO = new Date().toISOString();
+          const currentTime = new Date();
+          const timeISO = currentTime.toISOString();
+          // Store local time in database for consistency with display format
+          const time = currentTime.toLocaleString('sv-SE').replace(' ', ' '); // YYYY-MM-DD HH:mm:ss in local time
           const recipient = onlineUsers.get(toUserId);
           
           // Prepare payload for both sender and recipient
@@ -243,7 +258,7 @@ wss.on('connection', (ws) => {
             toUserId,
             fromUsername: sender.username,
             message: privateMsg,
-            time: timeISO,
+            time: new Date(timeISO).toLocaleTimeString(), // Send local time format for consistency
             chatKey: `chat_${[sender.userId, toUserId].sort().join('_')}`,
             file: file || null,
             fileUrl: fileUrl || null,

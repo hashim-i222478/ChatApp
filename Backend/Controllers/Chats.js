@@ -60,15 +60,28 @@ exports.getPrivateChatHistory = async (req, res) => {
         );
 
         // Transform to match expected format
-        const formattedMessages = messages.map(msg => ({
-            from: msg.sender_id,
-            to: msg.receiver_id,
-            message: msg.message,
-            time: msg.time,
-            fileUrl: msg.file_url,
-            fileType: msg.file_type,
-            filename: msg.filename
-        }));
+        const formattedMessages = messages.map(msg => {
+            let timeISO;
+            if (msg.time instanceof Date) {
+                timeISO = msg.time.toISOString();
+            } else if (typeof msg.time === 'string') {
+                // Handle MySQL datetime string format stored as UTC
+                // Add 'Z' to indicate UTC and parse correctly
+                timeISO = new Date(msg.time + 'Z').toISOString();
+            } else {
+                timeISO = new Date().toISOString();
+            }
+            
+            return {
+                from: msg.sender_id,
+                to: msg.receiver_id,
+                message: msg.message,
+                time: timeISO,
+                fileUrl: msg.file_url,
+                fileType: msg.file_type,
+                filename: msg.filename
+            };
+        });
 
         res.status(200).json(formattedMessages);
         console.log("Get private chat history Controller");
@@ -110,18 +123,22 @@ exports.sendPrivateMessage = async (req, res) => {
         }
 
         // Create the new message
+        const currentTime = new Date();
+        // Store UTC time in database for consistency
+        const mysqlTime = currentTime.toISOString().slice(0, 19).replace('T', ' ');
+        
         const [messageResult] = await pool.execute(
             `INSERT INTO private_messages (conversation_id, sender_id, receiver_id, message, time, file_url, file_type, filename) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [conversation.id, from, to, message || null, new Date(), fileUrl || null, fileType || null, filename || null]
+            [conversation.id, from, to, message || null, mysqlTime, fileUrl || null, fileType || null, filename || null]
         );
 
-        // Return formatted message
+        // Return formatted message with ISO timestamp
         const formattedMessage = {
             from: from,
             to: to,
             message: message,
-            time: new Date(),
+            time: currentTime.toISOString(),
             fileUrl: fileUrl,
             fileType: fileType,
             filename: filename

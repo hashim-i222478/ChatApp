@@ -243,7 +243,7 @@
     flex: unset;
 }
 .message-self .message-bubble {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
     color: #fff;
     border-radius: 20px;
     padding: 1rem;
@@ -264,7 +264,7 @@
     height: 0;
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
-    border-left: 10px solid #1d4ed8;
+    border-left: 10px solid #7c3aed;
 }
 
 .message-other .message-bubble {
@@ -311,12 +311,13 @@
 .message-other .message-username {
     color: #2563eb;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
+
 }
 
 .message-self .message-text {
     color: #ffffff;
-    opacity: 0.75;  
+    
 }
 .message-time {
     font-size: 0.75rem;

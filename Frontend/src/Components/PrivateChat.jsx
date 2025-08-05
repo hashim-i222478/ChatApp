@@ -140,6 +140,11 @@ const PrivateChat = () => {
   // Use a consistent chatKey for both users
   const chatKey = `chat_${[myUserId, targetUserId].sort().join('_')}`;
 
+  // Utility function to format timestamp for display (now just returns the time as-is since it's already local)
+  const formatTimeForDisplay = (localTime) => {
+    return localTime; // Already in local time format
+  };
+
   // Fetch profile picture for the target user
   useEffect(() => {
     const fetchProfilePic = async () => {
@@ -190,7 +195,7 @@ const PrivateChat = () => {
           return {
             system: true,
             message: msg.message,
-            time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
+            time: formatTimeForDisplay(msg.time)
           };
         }
         
@@ -206,7 +211,7 @@ const PrivateChat = () => {
         return {
           from: msg.fromUserId === myUserId ? 'me' : 'them',
           text: msg.message || '',
-          time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
+          time: formatTimeForDisplay(msg.time),
           username: displayUsername,
           file: msg.file || null,
           fileUrl: msg.fileUrl || null,
@@ -231,7 +236,7 @@ const PrivateChat = () => {
         return {
           system: true,
           message: msg.message,
-          time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
+          time: formatTimeForDisplay(msg.time)
         };
       }
       
@@ -247,7 +252,7 @@ const PrivateChat = () => {
       return {
         from: msg.fromUserId === myUserId ? 'me' : 'them',
         text: msg.message || '',
-        time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
+        time: formatTimeForDisplay(msg.time),
         username: displayUsername,
         file: msg.file || null,
         fileUrl: msg.fileUrl || null,
@@ -269,7 +274,7 @@ const PrivateChat = () => {
             return {
               system: true,
               message: msg.message,
-              time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
+              time: formatTimeForDisplay(msg.time)
             };
           }
           
@@ -285,7 +290,7 @@ const PrivateChat = () => {
           return {
             from: msg.fromUserId === myUserId ? 'me' : 'them',
             text: msg.message || '',
-            time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
+            time: formatTimeForDisplay(msg.time),
             username: displayUsername,
             file: msg.file || null,
             fileUrl: msg.fileUrl || null,
@@ -351,7 +356,7 @@ const PrivateChat = () => {
           return {
             system: true,
             message: msg.message,
-            time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
+            time: formatTimeForDisplay(msg.time)
           };
         }
         
@@ -367,7 +372,7 @@ const PrivateChat = () => {
         return {
           from: msg.fromUserId === myUserId ? 'me' : 'them',
           text: msg.message,
-          time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
+          time: formatTimeForDisplay(msg.time),
           username: displayUsername
         };
       });
@@ -478,20 +483,19 @@ const PrivateChat = () => {
 
   // Handler for selecting/unselecting a message by timestamp
   const handleSelectMessage = (msg) => {
-    //console.log('selecting message: ', msg, 'with time: ', msg.time);
+    // Use the local time format directly since it's stored consistently
     setSelectedMessages((prev) =>
       prev.includes(msg.time)
         ? prev.filter((t) => t !== msg.time)
         : [...prev, msg.time]
-        //console.log('Selected messages:', [...prev, msg.time])
     );
-    
   };
 
   // Determine if all selected messages are sent by me
-  const allSelectedByMe = selectedMessages.length > 0 && selectedMessages.every(selTime => {
-    const msg = messages.find(m => m.time === selTime);
-    return msg && msg.from === 'me';
+  const allSelectedByMe = selectedMessages.length > 0 && selectedMessages.every(selectedTime => {
+    const localMsgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
+    const msg = localMsgs.find(m => m.time === selectedTime);
+    return msg && msg.fromUserId === myUserId;
   });
 
   // Handler for deleting selected messages for me
@@ -499,9 +503,10 @@ const PrivateChat = () => {
     console.log('Delete for Me - selectedMessages:', selectedMessages);
     const msgs = JSON.parse(localStorage.getItem(chatKey) || '[]');
     console.log('Before delete (for me), localStorage:', msgs);
-    // Remove messages whose time is in selectedMessages
-    const updated = msgs.filter(msg => !selectedMessages.includes(isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()));
+    // Remove messages whose time is in selectedMessages (local time format comparison)
+    const updated = msgs.filter(msg => !selectedMessages.includes(msg.time));
     console.log('After delete (for me), localStorage:', updated);
+    localStorage.setItem(chatKey, JSON.stringify(updated));
     localStorage.setItem(chatKey, JSON.stringify(updated));
     
     // Update messages state with alias checking
@@ -511,7 +516,7 @@ const PrivateChat = () => {
         return {
           system: true,
           message: msg.message,
-          time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString()
+          time: formatTimeForDisplay(msg.time)
         };
       }
       
@@ -527,7 +532,7 @@ const PrivateChat = () => {
       return {
         from: msg.fromUserId === myUserId ? 'me' : 'them',
         text: msg.message,
-        time: isNaN(Date.parse(msg.time)) ? msg.time : new Date(msg.time).toLocaleTimeString(),
+        time: formatTimeForDisplay(msg.time),
         username: displayUsername
       };
     });
@@ -548,7 +553,7 @@ const PrivateChat = () => {
     ws.current.send(JSON.stringify({
       type: 'delete-message-for-everyone',
       chatKey,
-      timestamps: selectedMessages
+      timestamps: selectedMessages // Send local time format directly
     }));
     setShowDeleteModal(false);
     setSelectedMessages([]);
