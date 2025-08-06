@@ -10,7 +10,7 @@
 }
 
 .signup-container {
-    max-width: 30rem;
+    max-width: 42rem;
     width: 100%;
 }
 
@@ -297,6 +297,10 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .signup-container {
+        max-width: 36rem;
+    }
+
     .signup-card {
         padding: 2rem;
     }
@@ -311,6 +315,10 @@
 }
 
 @media (max-width: 640px) {
+    .signup-container {
+        max-width: 90%;
+    }
+
     .signup-card {
         padding: 1.5rem;
     }

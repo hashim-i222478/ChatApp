@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../Style/updateProfile.css';
 import { authAPI } from '../Services/api';
-import Header from './header';
+import { Header } from '../Components';
 import { useNavigate } from 'react-router-dom';
 
 const UpdateProfile = () => {
@@ -146,56 +146,44 @@ const UpdateProfile = () => {
             just leave the PIN fields blank.
           </p>
 
-          <div className="profile-picture-section">
-            <label className="profile-picture-label">Profile Picture:</label>
-            <div className="profile-picture-container">
-              <div className="profile-picture-preview">
-                {previewUrl ? (
-                  <img 
-                    src={previewUrl.startsWith('data:') 
-                      ? previewUrl 
-                      : previewUrl.startsWith('/uploads/') 
-                        ? `http://localhost:5001${previewUrl}` 
-                        : previewUrl} 
-                    alt="Profile Preview" 
-                    className="profile-preview-image" 
-                  />
-                ) : (
-                  <div className="profile-picture-placeholder">
-                    <span>No image selected</span>
-                  </div>
-                )}
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-                className="profile-picture-input"
-                id="profile-picture-input"
-              />
-              <label htmlFor="profile-picture-input" className="profile-picture-button">
-                Choose Image
-              </label>
-              <p className="profile-picture-note">Max size: 1MB. JPG/PNG only.</p>
-            </div>
-          </div>
-
           {loading && <p className="status loading">Processing{profilePicture ? ' and uploading image' : ''}...</p>}
           {message && <p className="status success">{message}</p>}
           {error && <p className="status error">{error}</p>}
 
           <form onSubmit={handleSubmit} className="update-profile-form">
-            <label>
-              New Username:
-              <input
-                type="text"
-                name="username"
-                value={form.username}
-                onChange={handleChange}
-                required
-                placeholder="Enter your new username"
-              />
-            </label>
+            <div className="profile-picture-section">
+              <label className="profile-picture-label">Profile Picture:</label>
+              <div className="profile-picture-container">
+                <div className="profile-picture-preview">
+                  {previewUrl ? (
+                    <img 
+                      src={previewUrl.startsWith('data:') 
+                        ? previewUrl 
+                        : previewUrl.startsWith('/uploads/') 
+                          ? `http://localhost:5001${previewUrl}` 
+                          : previewUrl} 
+                      alt="Profile Preview" 
+                      className="profile-preview-image" 
+                    />
+                  ) : (
+                    <div className="profile-picture-placeholder">
+                      <span>No image selected</span>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="profile-picture-input"
+                  id="profile-picture-input"
+                />
+                <label htmlFor="profile-picture-input" className="profile-picture-button">
+                  Choose Image
+                </label>
+                <p className="profile-picture-note">Max size: 1MB. JPG/PNG only.</p>
+              </div>
+            </div>
 
             <label>
               New 4-digit PIN:
@@ -223,7 +211,19 @@ const UpdateProfile = () => {
               />
             </label>
 
-            <button type="submit" disabled={loading}>
+            <label className="full-width">
+              New Username:
+              <input
+                type="text"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                required
+                placeholder="Enter your new username"
+              />
+            </label>
+
+            <button type="submit" disabled={loading} className="full-width">
               {loading ? 'Updating...' : 'Update Profile'}
             </button>
           </form>

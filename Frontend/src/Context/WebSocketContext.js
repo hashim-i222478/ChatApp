@@ -97,6 +97,22 @@ export const WebSocketProvider = ({ username, children }) => {
           }
           window.dispatchEvent(new CustomEvent('message-received', { detail: { chatKey } }));
         }
+        
+        // Handle account deletion notification
+        if (message.type === 'account-deleted') {
+          console.log('User account deleted:', message);
+          const { deletedUserId } = message;
+          
+          // Import friendsStorage dynamically to avoid circular dependency
+          import('../Services/friendsStorage').then(({ friendsStorage }) => {
+            // Remove the deleted user from friends list
+            friendsStorage.removeFriendByUserId(deletedUserId);
+            
+            // Remove all chats with the deleted user
+            friendsStorage.removeChatsWithDeletedUser(deletedUserId);
+          });
+        }
+        
         if (message.type === 'profile-update') {
           // Update all localStorage chat histories for this userId
           for (let key in localStorage) {

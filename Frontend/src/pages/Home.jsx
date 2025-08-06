@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation} from 'react-router-dom';
-import Header from './header';
-import AddFriendModal from './AddFriendModal';
+import { Header, AddFriendModal } from '../Components';
 import { AiOutlineMessage, AiOutlineTeam, AiOutlineClockCircle, AiOutlineLock, AiOutlineCopy, AiOutlineUserAdd } from 'react-icons/ai';
 import { BsShieldLock, BsFillTrashFill } from 'react-icons/bs';
 import { friendsStorage } from '../Services/friendsStorage';
@@ -146,8 +145,13 @@ const Home = () => {
         
         if (res.ok) {
           const responseData = await res.json();
-          // Add friend to localStorage
-          friendsStorage.addFriend(responseData.friend);
+          // Update both backend and localStorage synchronization
+          if (token) {
+            await friendsStorage.fetchAndStoreFriends(token);
+          } else {
+            // Fallback: Add friend to localStorage directly
+            friendsStorage.addFriend(responseData.friend);
+          }
           showPopup(`Friend added successfully${friendAlias.trim() ? ` as "${friendAlias.trim()}"` : ''}!`, 'success');
         } else {
           const errorData = await res.json();

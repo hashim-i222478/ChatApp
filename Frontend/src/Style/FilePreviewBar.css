@@ -1,0 +1,244 @@
+/* File Preview Bar Styles */
+.file-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  /* margin: 0.75rem 0; */
+  margin-top: 0.75rem;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+  transition: all 0.3s ease;
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* .file-preview-bar:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+  transform: translateY(-2px);
+} */
+
+.file-preview-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Media Preview Styles */
+.file-preview-media {
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  padding: 0.25rem;
+}
+
+.file-preview-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  transition: transform 0.2s ease;
+}
+
+.file-preview-image:hover {
+  transform: scale(1.05);
+}
+
+.file-preview-video {
+  max-width: 100px;
+  max-height: 60px;
+  border-radius: 0.375rem;
+}
+
+.file-preview-audio {
+  max-width: 120px;
+  height: 40px;
+}
+
+/* File Info Styles */
+.file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.file-icon {
+  color: #2563eb;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.file-name-text {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.file-details {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.file-type {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.file-separator {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.file-size {
+  font-weight: 500;
+  color: #475569;
+}
+
+/* Remove Button Styles */
+.file-remove-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.file-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #dc2626;
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+}
+
+.file-remove-btn:active {
+  transform: scale(0.95);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .file-preview-bar {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .file-preview-content {
+    gap: 0.75rem;
+  }
+  
+  .file-preview-image {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .file-preview-video {
+    max-width: 80px;
+    max-height: 50px;
+  }
+  
+  .file-preview-audio {
+    max-width: 100px;
+    height: 35px;
+  }
+  
+  .file-name-text {
+    max-width: 150px;
+    font-size: 0.875rem;
+  }
+  
+  .file-details {
+    font-size: 0.75rem;
+  }
+  
+  .file-remove-btn {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-preview-bar {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .file-preview-image {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .file-preview-video {
+    max-width: 60px;
+    max-height: 40px;
+  }
+  
+  .file-preview-audio {
+    max-width: 80px;
+    height: 30px;
+  }
+  
+  .file-name-text {
+    max-width: 100px;
+    font-size: 0.8rem;
+  }
+  
+  .file-details {
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+  
+  .file-type {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.375rem;
+  }
+}
+
+/* Animation */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

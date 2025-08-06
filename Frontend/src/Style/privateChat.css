@@ -175,14 +175,46 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
     width: 100%;
     background: #ffffff;
     border-radius: 1rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     padding: 2rem;
-   
     scrollbar-width: thin;
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for webkit browsers */
+.chat-box::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.chat-box::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* When chat box has only empty state, center it */
+.chat-box:has(.system-message:only-child) {
+    justify-content: center;
+    align-items: center;
+}
+
+/* Fallback for browsers that don't support :has() */
+.chat-box.empty-chat {
+    justify-content: center;
+    align-items: center;
 }
 
 .system-message {
@@ -190,7 +222,7 @@
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     font-size: 0.875rem;
     color: #6b7280;
     background: #f3f4f6;
@@ -198,6 +230,7 @@
     border-radius: 0.75rem;
     max-width: 70%;
     text-align: center;
+    align-self: center;
 }
 
 .message-container {
@@ -229,6 +262,11 @@
     display: flex;
     align-items: center;
     width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.message-row:last-child {
+    margin-bottom: 0;
 }
 
 .message-bubble {
@@ -378,7 +416,7 @@
 .typing-indicator {
     display: flex;
     justify-content: flex-start;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     animation: fadeSlideIn 0.3s ease both;
 }
 

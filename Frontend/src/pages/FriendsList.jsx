@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from './header';
-import AddFriendModal from './AddFriendModal';
+import { Header, AddFriendModal } from '../Components';
 import { AiOutlineUserAdd, AiOutlineMessage, AiOutlineEdit, AiOutlineDelete } from 'react-icons/ai';
 import { friendsStorage } from '../Services/friendsStorage';
 import { useWebSocket } from '../Context/WebSocketContext';
@@ -40,23 +39,14 @@ const FriendsList = () => {
   useEffect(() => {
     const loadFriends = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          // Fetch fresh friends data including profile pictures
-          const freshFriends = await friendsStorage.fetchAndStoreFriends(token);
-          setFriends(freshFriends);
-          console.log('Loaded friends from API with profile pictures:', freshFriends);
-        } else {
-          // Fallback to localStorage if no token
-          const cachedFriends = friendsStorage.getFriends();
-          setFriends(cachedFriends);
-          console.log('Loaded friends from localStorage:', cachedFriends);
-        }
-      } catch (error) {
-        console.error('Error loading friends:', error);
-        // Fallback to localStorage on error
+        // Always use localStorage data for faster loading
         const cachedFriends = friendsStorage.getFriends();
         setFriends(cachedFriends);
+        console.log('Loaded friends from localStorage:', cachedFriends);
+      } catch (error) {
+        console.error('Error loading friends:', error);
+        // If localStorage fails, set empty array
+        setFriends([]);
       } finally {
         setLoading(false);
       }
@@ -70,11 +60,20 @@ const FriendsList = () => {
       loadFriends();
     };
 
-    window.addEventListener('friends-updated', handleFriendsUpdate);
+    // Listen for account deletion events
+    const handleAccountDeleted = (event) => {
+      const { deletedUserId, updatedFriends } = event.detail;
+      console.log(`Account ${deletedUserId} was deleted, updating friends list...`);
+      setFriends(updatedFriends);
+    };
 
-    // Cleanup event listener on component unmount
+    window.addEventListener('friends-updated', handleFriendsUpdate);
+    window.addEventListener('friend-account-deleted', handleAccountDeleted);
+
+    // Cleanup event listeners on component unmount
     return () => {
       window.removeEventListener('friends-updated', handleFriendsUpdate);
+      window.removeEventListener('friend-account-deleted', handleAccountDeleted);
     };
   }, []);
 
@@ -102,12 +101,12 @@ const FriendsList = () => {
       });
 
       if (res.ok) {
-        // Remove from localStorage
+        // Update both backend and localStorage synchronization
         friendsStorage.removeFriend(friendToDelete.userId);
         // Update local state
         setFriends(prev => prev.filter(friend => friend.idofuser !== friendToDelete.userId));
         showPopup(`${friendToDelete.username} removed from friends successfully!`, 'success');
-        console.log('Friend removed successfully');
+        console.log('Friend removed successfully - updated both backend and localStorage');
       } else {
         showPopup('Failed to remove friend', 'error');
         console.error('Failed to remove friend');
@@ -147,7 +146,7 @@ const FriendsList = () => {
       });
 
       if (res.ok) {
-        // Update localStorage
+        // Update both backend and localStorage synchronization
         friendsStorage.updateFriendAlias(editingFriend.idofuser, newAlias.trim() || null);
         
         // Update local state
@@ -162,7 +161,7 @@ const FriendsList = () => {
         setEditingFriend(null);
         setNewAlias('');
         
-        console.log('Friend alias updated successfully');
+        console.log('Friend alias updated successfully - updated both backend and localStorage');
       } else {
         console.error('Failed to update friend alias');
       }
@@ -217,7 +216,7 @@ const FriendsList = () => {
         if (res.ok) {
           const responseData = await res.json();
           
-          // Refresh friends list from API to get complete data including profile pictures
+          // Update both backend and localStorage: fetch fresh data to ensure synchronization
           if (token) {
             await friendsStorage.fetchAndStoreFriends(token);
             const refreshedFriends = friendsStorage.getFriends();

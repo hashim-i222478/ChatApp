@@ -136,6 +136,32 @@ const SignUp = () => {
           
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="form-group">
+              <div className="profile-picture-section">
+              <label className="profile-picture-label">Profile Picture:</label>
+              <div className="profile-picture-container">
+                <div className="profile-picture-preview">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Profile Preview" className="profile-preview-image" />
+                  ) : (
+                    <div className="profile-picture-placeholder">
+                      <span>No image selected</span>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePicChange}
+                  className="profile-picture-input"
+                  id="profile-picture-input"
+                />
+                <label htmlFor="profile-picture-input" className="profile-picture-button">
+                  Choose Image
+                </label>
+                
+                <span className="profile-picture-note">Optional: Upload a profile picture</span>
+              </div>
+            </div>
               <label htmlFor="username" className="form-label">Username</label>
               <input
                 type="text"
@@ -178,30 +204,7 @@ const SignUp = () => {
                 className="form-input"
               />
             </div>
-            <div className="profile-picture-section">
-              <label className="profile-picture-label">Profile Picture:</label>
-              <div className="profile-picture-container">
-                <div className="profile-picture-preview">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt="Profile Preview" className="profile-preview-image" />
-                  ) : (
-                    <div className="profile-picture-placeholder">
-                      <span>No image selected</span>
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePicChange}
-                  className="profile-picture-input"
-                  id="profile-picture-input"
-                />
-                <label htmlFor="profile-picture-input" className="profile-picture-button">
-                  Choose Image
-                </label>
-              </div>
-            </div>
+            
             <button type="submit" className="signup-button" disabled={loading}>
               {loading ? 'Signing up...' : 'Sign Up'}
             </button>

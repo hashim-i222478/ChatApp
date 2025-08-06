@@ -1,13 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import Login from './Components/Login';
-import SignUp from './Components/SignUp';
-import UpdateProfile from './Components/UpdateProfile';
-import ViewProfile from './Components/ViewProfile';
-import Home from './Components/Home';
-import PrivateChat from './Components/PrivateChat';
-import RecentChats from './Components/RecentChats';
-import FriendsList from './Components/FriendsList';
+import { 
+  Login, 
+  SignUp, 
+  UpdateProfile, 
+  ViewProfile, 
+  Home, 
+  PrivateChat, 
+  RecentChats, 
+  FriendsList 
+} from './pages';
 import { WebSocketProvider } from './Context/WebSocketContext';
 
 function App() {

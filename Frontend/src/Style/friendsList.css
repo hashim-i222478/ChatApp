@@ -162,9 +162,10 @@ box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 -4px 6px -1px rgba(0, 0, 0, 0.0
 
 .friends-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   padding: 1rem;
+  max-width: 100%;
 }
 
 .friend-card {
@@ -340,6 +341,13 @@ box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 -4px 6px -1px rgba(0, 0, 0, 0.0
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .friends-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+  }
+}
+
 @media (max-width: 768px) {
   .friends-container {
     padding: 1.5rem 0.75rem;
@@ -395,6 +403,8 @@ box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 -4px 6px -1px rgba(0, 0, 0, 0.0
 
   .friends-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
   }
 
   .friend-card {
