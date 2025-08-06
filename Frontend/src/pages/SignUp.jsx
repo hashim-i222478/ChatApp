@@ -5,18 +5,65 @@ import '../Style/signup.css';
 
 // Modal component for registration success
 const SuccessModal = ({ newUserId, copied, onCopy, onClose }) => (
-  <div className="modal-backdrop">
-    <div className="modal1">
-      <h3 className="modal-title">Registration Successful!</h3>
-      <p className="modal-subtitle">Your User ID is:</p>
-      <div className="userid-copy-row">
-        <span className="userid-value">{newUserId}</span>
-        <button className="copy-btn" onClick={onCopy}>Copy</button>
+  <div className="success-modal-backdrop">
+    <div className="success-modal">
+      <div className="success-modal-header">
+        <div className="success-icon">
+          <svg className="success-check-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <circle className="success-check-circle" cx="12" cy="12" r="10" />
+            <path className="success-check-path" d="M8 12l2 2 4-4" />
+          </svg>
+        </div>
+        <h3 className="success-modal-title">Registration Successful!</h3>
+        <p className="success-modal-subtitle">Welcome to RealTalk! Your account has been created.</p>
       </div>
-      <p className="modal-note">Please save this User ID. You will need it to log in.</p>
-      <button className="modal-button" onClick={onClose}>Go to Login</button>
+      
+      <div className="success-modal-body">
+        <div className="userid-section">
+          <p className="userid-label">Your User ID:</p>
+          <div className="userid-copy-container">
+            <div className="userid-display">
+              <span className="userid-value">{newUserId}</span>
+            </div>
+            <button className="userid-copy-btn" onClick={onCopy} title="Copy User ID">
+              <svg className="copy-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect className="copy-icon-rect" x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path className="copy-icon-path" d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        </div>
+        
+        <div className="success-modal-note">
+          <div className="note-icon">
+            <svg className="info-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle className="info-icon-circle" cx="12" cy="12" r="10" />
+              <path className="info-icon-path" d="M12 16v-4M12 8h.01" />
+            </svg>
+          </div>
+          <p>Please save this User ID securely. You will need it to log into your account.</p>
+        </div>
+      </div>
+      
+      <div className="success-modal-footer">
+        <button className="success-modal-button" onClick={onClose}>
+          Continue to Login
+          <svg className="arrow-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path className="arrow-icon-path" d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
     </div>
-    {copied && <div className="success-notification">User ID copied!</div>}
+    {copied && (
+      <div className="success-copy-notification">
+        <svg className="notification-check-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <circle className="notification-check-circle" cx="12" cy="12" r="10" />
+          <path className="notification-check-path" d="M8 12l2 2 4-4" />
+        </svg>
+        User ID copied to clipboard!
+      </div>
+    )}
   </div>
 );
 

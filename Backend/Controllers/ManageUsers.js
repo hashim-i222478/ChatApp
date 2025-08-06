@@ -1,4 +1,3 @@
-
 const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -308,8 +307,7 @@ exports.deleteUser = async (req, res) => {
       const deletionMessage = JSON.stringify({
         type: 'account-deleted',
         deletedUserId: user.user_id,
-        message: `User ${user.user_id} has deleted their account`,
-        shouldCleanupChats: true // Flag to indicate chat cleanup needed
+        message: `User ${user.user_id} has deleted their account`
       });
 
       wss.clients.forEach(client => {
@@ -328,6 +326,20 @@ exports.deleteUser = async (req, res) => {
     });
   } catch (err) {
     console.error('Delete user error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Get all users for browsing
+exports.getAllUsers = async (req, res) => {
+  try {
+    const [users] = await pool.execute(
+      `SELECT id, user_id, username, profile_pic FROM users ORDER BY username ASC`
+    );
+    
+    res.status(200).json(users);
+  } catch (err) {
+    console.error('Get all users error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

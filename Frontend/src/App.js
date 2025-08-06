@@ -8,7 +8,8 @@ import {
   Home, 
   PrivateChat, 
   RecentChats, 
-  FriendsList 
+  FriendsList,
+  BrowseUsers
 } from './pages';
 import { WebSocketProvider } from './Context/WebSocketContext';
 
@@ -79,6 +80,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <FriendsList />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/browse-users" 
+              element={
+                <ProtectedRoute>
+                  <BrowseUsers />
                 </ProtectedRoute>
               } 
             />

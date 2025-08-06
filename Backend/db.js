@@ -12,9 +12,6 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
   queueLimit: parseInt(process.env.DB_QUEUE_LIMIT) || 0,
-  // acquireTimeout: 60000,  // Remove invalid options for mysql2
-  // timeout: 60000,         // Remove invalid options for mysql2
-  // reconnect: true         // Remove invalid options for mysql2
 });
 
 module.exports = pool;

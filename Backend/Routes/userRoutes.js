@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { signup, login, getuser, GetUserId, fetchUsername, getUserById, uploadProfilePic, deleteUser } = require('../Controllers/ManageUsers');
+const { signup, login, getuser, GetUserId, fetchUsername, getUserById, uploadProfilePic, deleteUser, getAllUsers } = require('../Controllers/ManageUsers');
 const verifyToken = require('../Middlewares/authMiddleware');
 
 // Set up storage for multer
@@ -26,6 +26,7 @@ router.get('/profile', verifyToken, getuser);
 router.get('/userId', verifyToken, GetUserId);
 router.get('/username/:userId',verifyToken, fetchUsername);
 router.get('/getUserById/:userId', verifyToken, getUserById);
+router.get('/all', verifyToken, getAllUsers);
 router.delete('/delete-account', verifyToken, deleteUser);
 
 // Profile picture upload route

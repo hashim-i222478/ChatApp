@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header, AddFriendModal } from '../Components';
-import { AiOutlineUserAdd, AiOutlineMessage, AiOutlineEdit, AiOutlineDelete } from 'react-icons/ai';
+import { AiOutlineUserAdd, AiOutlineMessage, AiOutlineEdit, AiOutlineDelete, AiOutlineSearch } from 'react-icons/ai';
 import { friendsStorage } from '../Services/friendsStorage';
 import { useWebSocket } from '../Context/WebSocketContext';
 import '../Style/friendsList.css';
@@ -286,6 +286,13 @@ const FriendsList = () => {
             >
               <AiOutlineUserAdd className="btn-icon" />
               Add New Friend
+            </button>
+            <button 
+              className="friends-browse-btn" 
+              onClick={() => navigate('/browse-users')}
+            >
+              <AiOutlineSearch className="btn-icon" />
+              Browse Users
             </button>
           </div>
           

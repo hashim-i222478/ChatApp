@@ -5,5 +5,6 @@ export { default as Home } from './Home';
 export { default as PrivateChat } from './PrivateChat';
 export { default as RecentChats } from './RecentChats';
 export { default as FriendsList } from './FriendsList';
+export { default as BrowseUsers } from './BrowseUsers';
 export { default as UpdateProfile } from './UpdateProfile';
 export { default as ViewProfile } from './ViewProfile';
