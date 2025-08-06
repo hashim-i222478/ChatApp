@@ -27,4 +27,7 @@ router.get('/search', friendsController.searchUsers);
 // Check if a user is a friend
 router.get('/check/:userId', friendsController.checkFriendship);
 
+// Update friend profile information (internal route for profile updates)
+router.put('/update-profile', friendsController.updateFriendProfile);
+
 module.exports = router;

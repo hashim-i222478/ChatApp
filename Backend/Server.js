@@ -432,6 +432,17 @@ app.post('/api/internal/broadcastProfileUpdate', (req, res) => {
   };
   console.log('Broadcasting profile update:', profileUpdateMsg);
   broadcastMessage(profileUpdateMsg);
+  
+  // Also broadcast friend profile update message
+  const friendProfileUpdateMsg = {
+    type: 'friend-profile-update',
+    userId,
+    username,
+    oldUsername
+  };
+  console.log('Broadcasting friend profile update:', friendProfileUpdateMsg);
+  broadcastMessage(friendProfileUpdateMsg);
+  
   res.status(200).json({ message: 'Broadcasted' });
 });
 

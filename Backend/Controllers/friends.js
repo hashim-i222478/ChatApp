@@ -281,3 +281,26 @@ exports.checkFriendship = async (req, res) => {
     }
 };
 
+// Update friend information when user profile changes
+exports.updateFriendProfile = async (req, res) => {
+    try {
+        const { userId, username, profilePic } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+        }
+
+        // Update username in friends table for all users who have this user as friend
+        await pool.execute(
+            `UPDATE friends SET username = ? WHERE idofuser = ?`,
+            [username, userId]
+        );
+
+        console.log(`Updated friend profile for user ${userId} with username ${username}`);
+        res.status(200).json({ message: 'Friend profiles updated successfully' });
+    } catch (error) {
+        console.error('Error updating friend profile:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+

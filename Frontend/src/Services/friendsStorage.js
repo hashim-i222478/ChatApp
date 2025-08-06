@@ -178,6 +178,43 @@ export const friendsStorage = {
     }
   },
 
+  // Update friend profile information when user updates their profile
+  updateFriendProfile: (userId, newUsername, newProfilePic = null) => {
+    try {
+      const currentFriends = friendsStorage.getFriends();
+      let updated = false;
+      
+      const updatedFriends = currentFriends.map(friend => {
+        if (friend.idofuser === userId) {
+          updated = true;
+          return {
+            ...friend,
+            username: newUsername,
+            ...(newProfilePic !== null && { profile_pic: newProfilePic })
+          };
+        }
+        return friend;
+      });
+      
+      if (updated) {
+        friendsStorage.setFriends(updatedFriends);
+        console.log(`Updated friend profile for userId ${userId} to username ${newUsername}`);
+        
+        // Dispatch event to notify components to refresh
+        window.dispatchEvent(new CustomEvent('friend-profile-updated', { 
+          detail: { userId, newUsername, newProfilePic } 
+        }));
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error updating friend profile in localStorage:', error);
+      return false;
+    }
+  },
+
   // Sync specific friend operation with backend and localStorage
   syncFriendOperation: async (operation, data, token) => {
     try {

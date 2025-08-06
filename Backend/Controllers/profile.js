@@ -95,6 +95,21 @@ exports.UpdateUserProfile = async (req, res) => {
       } catch (broadcastErr) {
         console.error('Failed to broadcast profile update:', broadcastErr.message);
       }
+
+      // Update friend information in friends table
+      try {
+        await axios.put('http://localhost:8080/api/friends/update-profile', {
+          userId: updatedUser.user_id,
+          username: updatedUser.username,
+          profilePic: updatedUser.profile_pic
+        }, {
+          headers: {
+            'Authorization': req.headers.authorization
+          }
+        });
+      } catch (friendUpdateErr) {
+        console.error('Failed to update friend profiles:', friendUpdateErr.message);
+      }
   
       res.status(200).json({
         message: 'Profile updated successfully',

@@ -67,13 +67,33 @@ const FriendsList = () => {
       setFriends(updatedFriends);
     };
 
+    // Listen for friend profile updates
+    const handleFriendProfileUpdated = (event) => {
+      const { userId, newUsername, newProfilePic } = event.detail;
+      console.log(`Friend profile updated: ${userId} -> ${newUsername}`);
+      
+      setFriends(prevFriends => 
+        prevFriends.map(friend => 
+          friend.idofuser === userId 
+            ? { 
+                ...friend, 
+                username: newUsername,
+                ...(newProfilePic !== undefined && { profile_pic: newProfilePic })
+              }
+            : friend
+        )
+      );
+    };
+
     window.addEventListener('friends-updated', handleFriendsUpdate);
     window.addEventListener('friend-account-deleted', handleAccountDeleted);
+    window.addEventListener('friend-profile-updated', handleFriendProfileUpdated);
 
     // Cleanup event listeners on component unmount
     return () => {
       window.removeEventListener('friends-updated', handleFriendsUpdate);
       window.removeEventListener('friend-account-deleted', handleAccountDeleted);
+      window.removeEventListener('friend-profile-updated', handleFriendProfileUpdated);
     };
   }, []);
 

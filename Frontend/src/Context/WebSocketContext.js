@@ -113,7 +113,26 @@ export const WebSocketProvider = ({ username, children }) => {
           });
         }
         
+        if (message.type === 'friend-profile-update') {
+          // Import friendsStorage dynamically to avoid circular dependency
+          import('../Services/friendsStorage').then(({ friendsStorage }) => {
+            // Update friend profile in localStorage
+            friendsStorage.updateFriendProfile(message.userId, message.username);
+          });
+          
+          // Dispatch event for friends list components to refresh
+          window.dispatchEvent(new CustomEvent('friend-profile-updated', { 
+            detail: { userId: message.userId, username: message.username } 
+          }));
+        }
+        
         if (message.type === 'profile-update') {
+          // Import friendsStorage dynamically to avoid circular dependency
+          import('../Services/friendsStorage').then(({ friendsStorage }) => {
+            // Update friend profile in localStorage
+            friendsStorage.updateFriendProfile(message.userId, message.username);
+          });
+          
           // Update all localStorage chat histories for this userId
           for (let key in localStorage) {
             if (key.startsWith('chat_')) {
