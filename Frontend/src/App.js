@@ -9,7 +9,7 @@ import {
   PrivateChat, 
   RecentChats, 
   FriendsList,
-  BrowseUsers
+  BrowseUsers 
 } from './pages';
 import { WebSocketProvider } from './Context/WebSocketContext';
 

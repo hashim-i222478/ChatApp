@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useRef, useEffect, useState } from 'react';
+import ForceLogoutModal from '../Components/ForceLogoutModal';
 
 const WebSocketContext = createContext(null);
 
@@ -8,6 +9,7 @@ export const WebSocketProvider = ({ username, children }) => {
   const ws = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [forceLogoutModal, setForceLogoutModal] = useState({ isVisible: false, message: '' });
 
   useEffect(() => {
     if (!username) return;
@@ -152,6 +154,14 @@ export const WebSocketProvider = ({ username, children }) => {
           // Dispatch a custom event so chat components can re-render
           window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userId: message.userId } }));
         }
+        
+        if (message.type === 'force-logout') {
+          // Show modal and handle forced logout
+          setForceLogoutModal({
+            isVisible: true,
+            message: message.message || 'You have been logged out because you logged in from another device/tab'
+          });
+        }
       } catch (e) {
         // Ignore non-JSON messages
       }
@@ -162,9 +172,40 @@ export const WebSocketProvider = ({ username, children }) => {
     };
   }, [username]);
 
+  const handleForceLogoutConfirm = () => {
+    // Preserve chat data and only clear authentication-related data
+    const itemsToPreserve = {};
+    
+    // Preserve all chat data
+    for (let key in localStorage) {
+      if (key.startsWith('chat_')) {
+        itemsToPreserve[key] = localStorage.getItem(key);
+      }
+    }
+    
+    // Clear all localStorage
+    localStorage.clear();
+    
+    // Restore preserved data
+    for (let key in itemsToPreserve) {
+      localStorage.setItem(key, itemsToPreserve[key]);
+    }
+    
+    // Hide modal
+    setForceLogoutModal({ isVisible: false, message: '' });
+    
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
   return (
     <WebSocketContext.Provider value={{ ws, isConnected, onlineUsers }}>
       {children}
+      <ForceLogoutModal
+        isVisible={forceLogoutModal.isVisible}
+        message={forceLogoutModal.message}
+        onConfirm={handleForceLogoutConfirm}
+      />
     </WebSocketContext.Provider>
   );
 }; 

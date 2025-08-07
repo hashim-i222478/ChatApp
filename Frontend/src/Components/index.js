@@ -14,3 +14,4 @@ export { default as PrivateChatAddFriendModal } from './PrivateChatAddFriendModa
 export { default as FilePreviewBar } from './FilePreviewBar';
 export { default as NotificationToast } from './NotificationToast';
 export { default as ChatInput } from './ChatInput';
+export { default as ForceLogoutModal } from './ForceLogoutModal';

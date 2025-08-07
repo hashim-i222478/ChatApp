@@ -1,0 +1,327 @@
+.force-logout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.4s ease-out;
+}
+
+.force-logout-modal {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  max-width: 480px;
+  width: 90%;
+  overflow: hidden;
+  animation: slideInScale 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.force-logout-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 50%, #2563eb 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8) rotateX(20deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotateX(0deg);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.force-logout-header {
+  padding: 2.5rem 2rem 1rem 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.force-logout-icon-container {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem auto;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: pulse 2s infinite;
+}
+
+.force-logout-icon-container::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  opacity: 0.1;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.warning-icon {
+  font-size: 32px;
+  color: #dc2626;
+  filter: drop-shadow(0 2px 4px rgba(220, 38, 38, 0.2));
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.force-logout-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.force-logout-subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.force-logout-body {
+  padding: 0 2rem 1.5rem 2rem;
+  text-align: center;
+}
+
+.force-logout-message {
+  margin: 0 0 1.5rem 0;
+  color: #374151;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.force-logout-info {
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+}
+
+.force-logout-info p {
+  margin: 0;
+  color: #2563eb;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.force-logout-info p::before {
+  content: '💬';
+  font-size: 1.2rem;
+}
+
+.force-logout-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.countdown-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  border: 3px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: rotateCountdown 1s linear infinite;
+}
+
+.countdown-circle::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #9333ea);
+  opacity: 0.1;
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.countdown-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2563eb;
+  text-shadow: 0 1px 2px rgba(37, 99, 235, 0.1);
+}
+
+@keyframes rotateCountdown {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.countdown-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.countdown-text strong {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.force-logout-footer {
+  padding: 0 2rem 2rem 2rem;
+  text-align: center;
+}
+
+.logout-confirm-btn {
+  background: linear-gradient(135deg, #2563eb 0%, #9333ea 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 16px rgba(37, 99, 235, 0.3),
+    0 3px 6px rgba(37, 99, 235, 0.2);
+  min-width: 160px;
+}
+
+.logout-confirm-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.logout-confirm-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 24px rgba(37, 99, 235, 0.4),
+    0 6px 12px rgba(37, 99, 235, 0.3);
+}
+
+.logout-confirm-btn:hover::before {
+  left: 100%;
+}
+
+.logout-confirm-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 
+    0 4px 8px rgba(37, 99, 235, 0.3),
+    0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .force-logout-modal {
+    margin: 1rem;
+    max-width: none;
+    width: calc(100% - 2rem);
+  }
+
+  .force-logout-header {
+    padding: 2rem 1.5rem 1rem 1.5rem;
+  }
+
+  .force-logout-header h3 {
+    font-size: 1.5rem;
+  }
+
+  .force-logout-icon-container {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+  }
+
+  .warning-icon {
+    font-size: 24px;
+  }
+
+  .force-logout-body {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+
+  .force-logout-message {
+    font-size: 1rem;
+  }
+
+  .force-logout-footer {
+    padding: 0 1.5rem 2rem 1.5rem;
+  }
+
+  .logout-confirm-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    width: 100%;
+  }
+
+  .countdown-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .countdown-number {
+    font-size: 1.25rem;
+  }
+}

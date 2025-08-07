@@ -72,6 +72,23 @@ wss.on('connection', (ws) => {
         if (oldUser && oldUser.userId !== parsed.userId) {
           onlineUsers.delete(oldUser.userId);
         }
+
+        // Check if user is already logged in from another session
+        const existingSession = onlineUsers.get(parsed.userId);
+        if (existingSession && existingSession.ws && existingSession.ws !== ws) {
+          // Send logout message to previous session
+          if (existingSession.ws.readyState === WebSocket.OPEN) {
+            existingSession.ws.send(JSON.stringify({
+              type: 'force-logout',
+              message: 'You have been logged in from another device/tab'
+            }));
+            // Close the previous connection
+            existingSession.ws.close(1000, 'Logged in from another session');
+          }
+          // Remove the old session from clients map
+          clients.delete(existingSession.ws);
+        }
+
         clients.set(ws, { userId: parsed.userId, username: parsed.username });
         onlineUsers.set(parsed.userId, { username: parsed.username, ws });
         broadcastOnlineUsers();
