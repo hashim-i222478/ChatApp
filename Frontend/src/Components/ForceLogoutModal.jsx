@@ -45,9 +45,6 @@ const ForceLogoutModal = ({ isVisible, message, onConfirm }) => {
             <p>Your chat history has been saved.</p>
           </div>
           <div className="force-logout-countdown">
-            <div className="countdown-circle">
-              <span className="countdown-number">{countdown}</span>
-            </div>
             <p className="countdown-text">
               Redirecting to login in <strong>{countdown}</strong> second{countdown !== 1 ? 's' : ''}
             </p>

@@ -24,14 +24,26 @@ api.interceptors.request.use(
   }
 );
 
+// Flag to prevent multiple simultaneous redirects
+let isRedirecting = false;
+
 // Add a response interceptor to handle token expiration
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     // If the error is due to an expired/invalid token, redirect to login
-    if (error.response && error.response.status === 401) {
+    if (error.response && error.response.status === 401 && !isRedirecting) {
+      isRedirecting = true;
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('email');
+      
+      // Reset the flag after a short delay to allow the redirect to complete
+      setTimeout(() => {
+        isRedirecting = false;
+      }, 1000);
+      
       window.location.href = '/login';
     }
     return Promise.reject(error);
