@@ -118,13 +118,14 @@ wss.on('connection', (ws) => {
         }
         // --- Deliver and delete pending messages for this user ---
         try {
-          // Use JOIN to get all pending messages for this user in one query
+          // Use JOIN to get all pending messages for this user in one query (exclude delete requests)
           const [deliverable] = await pool.execute(
             `SELECT pm.*, pc.participant1, pc.participant2 
              FROM private_messages pm
              JOIN private_conversations pc ON pm.conversation_id = pc.id
              WHERE (pc.participant1 = ? OR pc.participant2 = ?) 
-             AND pm.receiver_id = ?`,
+             AND pm.receiver_id = ? 
+             AND pm.offline_delete = FALSE`,
             [parsed.userId, parsed.userId, parsed.userId]
           );
 
@@ -153,38 +154,58 @@ wss.on('connection', (ws) => {
             }));
           }
 
-          // Delete delivered messages using JOIN
+          // Delete delivered messages using JOIN (exclude delete requests)
           await pool.execute(
             `DELETE pm FROM private_messages pm
              JOIN private_conversations pc ON pm.conversation_id = pc.id
              WHERE (pc.participant1 = ? OR pc.participant2 = ?) 
-             AND pm.receiver_id = ?`,
+             AND pm.receiver_id = ? 
+             AND pm.offline_delete = FALSE`,
             [parsed.userId, parsed.userId, parsed.userId]
           );
 
           // --- Deliver and delete pending delete-for-everyone events ---
-          // Use JOIN to get pending deletes with their timestamps in one query
-          const [pendingDeletesWithTimestamps] = await pool.execute(
-            `SELECT pd.id, pd.chat_key, 
-                    GROUP_CONCAT(pdt.message_timestamp) as timestamps
-             FROM pending_deletes pd
-             LEFT JOIN pending_delete_timestamps pdt ON pd.id = pdt.pending_delete_id
-             WHERE pd.user_id = ?
-             GROUP BY pd.id, pd.chat_key`,
+          // Use JOIN to get pending deletes from private_messages table
+          const [pendingDeletes] = await pool.execute(
+            `SELECT pm.*, pc.participant1, pc.participant2
+             FROM private_messages pm
+             JOIN private_conversations pc ON pm.conversation_id = pc.id
+             WHERE pm.receiver_id = ? AND pm.offline_delete = TRUE`,
             [parsed.userId]
           );
 
-          for (const event of pendingDeletesWithTimestamps) {
+          // Group by conversation and collect timestamps
+          const deleteGroups = {};
+          for (const deleteMsg of pendingDeletes) {
+            const chatKey = `chat_${[deleteMsg.participant1, deleteMsg.participant2].sort().join('_')}`;
+            if (!deleteGroups[chatKey]) {
+              deleteGroups[chatKey] = [];
+            }
+            // Convert time to local time format for frontend
+            let timeISO;
+            if (deleteMsg.time instanceof Date) {
+              timeISO = deleteMsg.time.toISOString();
+            } else if (typeof deleteMsg.time === 'string') {
+              timeISO = new Date(deleteMsg.time + 'Z').toISOString();
+            } else {
+              timeISO = new Date().toISOString();
+            }
+            deleteGroups[chatKey].push(new Date(timeISO).toLocaleTimeString());
+          }
+
+          // Send grouped delete requests
+          for (const [chatKey, timestamps] of Object.entries(deleteGroups)) {
             ws.send(JSON.stringify({
               type: 'delete-message-for-everyone',
-              chatKey: event.chat_key,
-              timestamps: event.timestamps ? event.timestamps.split(',') : [] // These are already in local time format
+              chatKey,
+              timestamps
             }));
           }
 
-          // Delete all pending deletes for this user (CASCADE will handle timestamps)
+          // Delete all pending deletes for this user
           await pool.execute(
-            `DELETE FROM pending_deletes WHERE user_id = ?`,
+            `DELETE pm FROM private_messages pm
+             WHERE pm.receiver_id = ? AND pm.offline_delete = TRUE`,
             [parsed.userId]
           );
         } catch (error) {
@@ -271,8 +292,8 @@ wss.on('connection', (ws) => {
           } else {
             // Recipient offline: store in DB for later delivery
             await pool.execute(
-              `INSERT INTO private_messages (conversation_id, sender_id, receiver_id, message, time, file_url, file_type, filename) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              `INSERT INTO private_messages (conversation_id, sender_id, receiver_id, message, time, file_url, file_type, filename, offline_delete) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, FALSE)`,
               [conversation.id, sender.userId, toUserId, privateMsg, time, fileUrl || null, fileType || null, filename || null]
             );
           }
@@ -306,18 +327,69 @@ wss.on('connection', (ws) => {
                 }));
               } else {
                 console.log('User offline, storing pending delete for:', userId);
-                // Create PendingDelete and PendingDeleteTimestamp entries
-                const [result] = await pool.execute(
-                  `INSERT INTO pending_deletes (user_id, chat_key) VALUES (?, ?)`,
-                  [userId, chatKey]
+
+                // Find conversation for this chatKey
+                const match = chatKey.match(/^chat_(.+)_(.+)$/);
+                const [_, idA, idB] = match;
+                let [conversation] = await pool.execute(
+                  `SELECT * FROM private_conversations 
+                   WHERE (participant1 = ? AND participant2 = ?) 
+                      OR (participant1 = ? AND participant2 = ?)`,
+                  [idA, idB, idB, idA]
                 );
-                
-                const pendingDeleteId = result.insertId;
-                for (const ts of timestamps) {
-                  await pool.execute(
-                    `INSERT INTO pending_delete_timestamps (pending_delete_id, message_timestamp) VALUES (?, ?)`,
-                    [pendingDeleteId, ts]
+
+                let conversationId;
+                if (conversation.length > 0) {
+                  conversationId = conversation[0].id;
+                } else {
+                  // Create conversation if it doesn't exist
+                  const [result] = await pool.execute(
+                    `INSERT INTO private_conversations (participant1, participant2) VALUES (?, ?)`,
+                    [idA, idB]
                   );
+                  conversationId = result.insertId;
+                }
+
+                // Get the sender (who initiated the delete)
+                const sender = clients.get(ws);
+                const senderId = sender ? sender.userId : idA;
+
+                // Store one delete request record for each timestamp
+                for (const timestamp of timestamps) {
+                  // Convert timestamp back to MySQL datetime format
+                  // timestamps come as local time strings like "10:30:15 AM"
+                  // We need to store them as they are for later matching
+                  const today = new Date().toISOString().split('T')[0]; // Get today's date
+                  const [time, period] = timestamp.split(' ');
+                  let [hours, minutes, seconds] = time.split(':');
+                  
+                  if (period === 'PM' && hours !== '12') {
+                    hours = (parseInt(hours) + 12).toString();
+                  } else if (period === 'AM' && hours === '12') {
+                    hours = '00';
+                  }
+                  
+                  const mysqlTime = `${today} ${hours.padStart(2, '0')}:${minutes}:${seconds}`;
+                  
+                  // First, try to update existing message with this timestamp and conversation
+                  const [updateResult] = await pool.execute(
+                    `UPDATE private_messages pm
+                     SET pm.offline_delete = TRUE
+                     WHERE pm.conversation_id = ? 
+                     AND pm.receiver_id = ? 
+                     AND pm.time = ?
+                     AND pm.offline_delete = FALSE`,
+                    [conversationId, userId, mysqlTime]
+                  );
+                  
+                  // If no existing message was updated, create a new delete request record
+                  if (updateResult.affectedRows === 0) {
+                    await pool.execute(
+                      `INSERT INTO private_messages (conversation_id, sender_id, receiver_id, message, time, offline_delete) 
+                       VALUES (?, ?, ?, 'DELETE_REQUEST', ?, TRUE)`,
+                      [conversationId, senderId, userId, mysqlTime]
+                    );
+                  }
                 }
               }
             }
