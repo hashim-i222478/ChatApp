@@ -27,7 +27,7 @@ function App() {
   const username = localStorage.getItem('username');
 
   return (
-    <WebSocketProvider username={username}>
+    <WebSocketProvider>
       <Router>
         <div className="App">
           <Routes>

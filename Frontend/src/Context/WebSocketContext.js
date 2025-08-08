@@ -5,15 +5,75 @@ const WebSocketContext = createContext(null);
 
 export const useWebSocket = () => useContext(WebSocketContext);
 
-export const WebSocketProvider = ({ username, children }) => {
+export const WebSocketProvider = ({ children }) => {
   const ws = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [forceLogoutModal, setForceLogoutModal] = useState({ isVisible: false, message: '' });
+  const [currentUsername, setCurrentUsername] = useState(localStorage.getItem('username'));
+
+  // Listen for login events and localStorage changes
+  useEffect(() => {
+    const handleLoginStateChange = () => {
+      const newUsername = localStorage.getItem('username');
+      setCurrentUsername(newUsername);
+    };
+
+    const handleLogoutEvent = () => {
+      console.log('WebSocket: Handling logout event');
+      console.log('WebSocket: Current WebSocket state:', ws.current ? 'connected' : 'null');
+      
+      setCurrentUsername(null);
+      setIsConnected(false);
+      setOnlineUsers([]);
+      
+      if (ws.current) {
+        console.log('WebSocket: Closing WebSocket connection');
+        ws.current.close();
+        ws.current = null;
+        console.log('WebSocket: Connection closed and set to null');
+      } else {
+        console.log('WebSocket: No active connection to close');
+      }
+    };
+
+    // Safely add event listeners
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('user-logged-in', handleLoginStateChange);
+      window.addEventListener('user-logged-out', handleLogoutEvent);
+      window.addEventListener('storage', handleLoginStateChange);
+    }
+
+    return () => {
+      // Safely remove event listeners
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        try {
+          window.removeEventListener('user-logged-in', handleLoginStateChange);
+          window.removeEventListener('user-logged-out', handleLogoutEvent);
+          window.removeEventListener('storage', handleLoginStateChange);
+        } catch (error) {
+          console.warn('Error removing event listeners:', error);
+        }
+      }
+    };
+  }, []);
 
   useEffect(() => {
-    if (!username) return;
+    console.log('WebSocket useEffect triggered, currentUsername:', currentUsername);
+    
+    if (!currentUsername) {
+      console.log('WebSocket: No username, cleaning up any existing connection');
+      if (ws.current) {
+        console.log('WebSocket: Closing connection due to no username');
+        ws.current.close();
+        ws.current = null;
+        setIsConnected(false);
+        setOnlineUsers([]);
+      }
+      return;
+    }
 
+    console.log('WebSocket: Creating new connection for user:', currentUsername);
     ws.current = new WebSocket('ws://localhost:8081');
 
     ws.current.onopen = () => {
@@ -22,14 +82,21 @@ export const WebSocketProvider = ({ username, children }) => {
       ws.current.send(
         JSON.stringify({
           type: 'identify',
-          username,
+          username: currentUsername,
           userId: localStorage.getItem('userId')
         })
       );
     };
 
-    ws.current.onclose = () => setIsConnected(false);
-    ws.current.onerror = () => setIsConnected(false);
+    ws.current.onclose = () => {
+      console.log('WebSocket connection closed');
+      setIsConnected(false);
+    };
+    
+    ws.current.onerror = () => {
+      console.log('WebSocket connection error');
+      setIsConnected(false);
+    };
 
     ws.current.onmessage = (event) => {
       try {
@@ -168,9 +235,17 @@ export const WebSocketProvider = ({ username, children }) => {
     };
 
     return () => {
-      if (ws.current) ws.current.close();
+      console.log('WebSocket: Cleaning up WebSocket connection');
+      if (ws.current) {
+        try {
+          ws.current.close();
+          console.log('WebSocket: Connection closed in cleanup');
+        } catch (error) {
+          console.warn('Error closing WebSocket:', error);
+        }
+      }
     };
-  }, [username]);
+  }, [currentUsername]);
 
   const handleForceLogoutConfirm = () => {
     // Preserve chat data and only clear authentication-related data
@@ -190,6 +265,9 @@ export const WebSocketProvider = ({ username, children }) => {
     for (let key in itemsToPreserve) {
       localStorage.setItem(key, itemsToPreserve[key]);
     }
+    
+    // Dispatch logout event to ensure WebSocket disconnection
+    window.dispatchEvent(new CustomEvent('user-logged-out'));
     
     // Hide modal
     setForceLogoutModal({ isVisible: false, message: '' });

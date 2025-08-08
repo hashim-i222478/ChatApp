@@ -21,14 +21,6 @@ const Home = () => {
   const location = useLocation();
   const [profilePicUrl, setProfilePicUrl] = useState('');
 
-
-  useEffect(() => {
-    if (!location.search.includes('reloaded=1')) {
-      navigate(`${location.pathname}?reloaded=1`, { replace: true });
-      window.location.reload();
-    }
-  }, [location, navigate]);
-
   useEffect(() => {
     setUserId(localStorage.getItem('userId') || '');
     setUsername(localStorage.getItem('username') || '');
@@ -210,23 +202,6 @@ const Home = () => {
             </button>
           </div>
         </div>
-        {/* <div className="home-features">
-          <div className="feature-card" onClick={handleOnlineUsers}>
-            <AiOutlineTeam className="feature-icon" />
-            <h3 className="feature-title">Online Users</h3>
-            <p className="feature-description">See who's online and start a conversation.</p>
-          </div>
-          <div className="feature-card" onClick={handleRecentChats}>
-            <AiOutlineClockCircle className="feature-icon" />
-            <h3 className="feature-title">Recent Chats</h3>
-            <p className="feature-description">Pick up where you left off with ease.</p>
-          </div>
-          <div className="feature-card">
-            <AiOutlineLock className="feature-icon" />
-            <h3 className="feature-title">Secure Messaging</h3>
-            <p className="feature-description">Your conversations are private and protected.</p>
-          </div>
-        </div> */}
 
         {isModalOpen && (
           <div className="modal-overlay">

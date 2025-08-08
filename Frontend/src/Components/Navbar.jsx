@@ -15,6 +15,8 @@ const Navbar = ({ navItems, location, navigate }) => {
     const handleLogout = () => {
         localStorage.clear();
         sessionStorage.clear();
+        // Dispatch logout event to close WebSocket connection
+        window.dispatchEvent(new CustomEvent('user-logged-out'));
         window.location.href = '/login';
     };
 

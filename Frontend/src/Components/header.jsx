@@ -106,27 +106,33 @@ const Header = () => {
     }, [unread]);
 
     const handleLogout = () => {
-        console.log('Attempting to log out...');
+        console.log('Header: Attempting to log out...');
         setIsLoggingOut(true);
         
         // Show loader for 3 seconds before actually logging out
         setTimeout(() => {
+            console.log('Header: Clearing localStorage and dispatching logout event');
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             localStorage.removeItem('email');
             localStorage.removeItem('userId');
             // Clear friends cache on logout
             friendsStorage.clearFriends();
+            
+            // Dispatch logout event to close WebSocket connection
+            console.log('Header: Dispatching user-logged-out event');
+            window.dispatchEvent(new CustomEvent('user-logged-out'));
+            
             console.log('LocalStorage after logout:', {
                 token: localStorage.getItem('token'),
                 username: localStorage.getItem('username'),
-                email: localStorage.getItem('email'),
                 userId: localStorage.getItem('userId'),
                 friends: localStorage.getItem('friends')
             });
             setIsLoggingOut(false);
+            console.log('Header: Navigating to login page...');
             navigate('/login', { replace: true });
-            console.log('Redirecting to login page...');
+            console.log('Header: Redirecting to login page...');
         }, 3000);
     };
 

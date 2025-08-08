@@ -135,7 +135,15 @@ const PrivateChat = () => {
     };
     
     window.addEventListener('friends-updated', handleFriendsUpdate);
-    return () => window.removeEventListener('friends-updated', handleFriendsUpdate);
+    return () => {
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        try {
+          window.removeEventListener('friends-updated', handleFriendsUpdate);
+        } catch (error) {
+          console.warn('Error removing friends-updated event listener:', error);
+        }
+      }
+    };
   }, [targetUserId, chatKey, myUserId, myUsername, targetUsername]);
 
   // Load local messages + fetch from DB if needed
@@ -227,8 +235,14 @@ const PrivateChat = () => {
     window.addEventListener('chats-deleted', handleChatsDeleted);
     
     return () => {
-      window.removeEventListener('message-received', handleMessageReceived);
-      window.removeEventListener('chats-deleted', handleChatsDeleted);
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        try {
+          window.removeEventListener('message-received', handleMessageReceived);
+          window.removeEventListener('chats-deleted', handleChatsDeleted);
+        } catch (error) {
+          console.warn('Error removing message/chat event listeners:', error);
+        }
+      }
     };
   }, [chatKey, myUserId, myUsername, targetUsername, targetUserId, navigate]);
 
@@ -266,9 +280,18 @@ const PrivateChat = () => {
       }
     };
 
-    ws.current.addEventListener('message', handleMessage);
+    if (ws.current) {
+      ws.current.addEventListener('message', handleMessage);
+    }
+    
     return () => {
-      ws.current.removeEventListener('message', handleMessage);
+      if (ws.current && typeof ws.current.removeEventListener === 'function') {
+        try {
+          ws.current.removeEventListener('message', handleMessage);
+        } catch (error) {
+          console.warn('Error removing WebSocket message event listener:', error);
+        }
+      }
     };
   }, [targetUserId]);
 
@@ -306,7 +329,15 @@ const PrivateChat = () => {
       setMessages(formatted);
     };
     window.addEventListener('profile-updated', handleProfileUpdate);
-    return () => window.removeEventListener('profile-updated', handleProfileUpdate);
+    return () => {
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        try {
+          window.removeEventListener('profile-updated', handleProfileUpdate);
+        } catch (error) {
+          console.warn('Error removing profile-updated event listener:', error);
+        }
+      }
+    };
   }, [chatKey, myUserId, myUsername, targetUsername]);
 
   useEffect(() => {

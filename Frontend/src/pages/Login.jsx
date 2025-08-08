@@ -22,13 +22,6 @@ const Login = () => {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    if (!location.search.includes('reloaded=1')) {
-      navigate(`${location.pathname}?reloaded=1`, { replace: true });
-      window.location.reload();
-    }
-  }, [location, navigate]);
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -42,7 +35,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await authAPI.login(formData);
+      const response = await authAPI.login(formData); 
       const { token, username, userId } = response.data;
       
       // Store user data in localStorage
@@ -52,6 +45,9 @@ const Login = () => {
       
       // Fetch and store friends in localStorage
       await friendsStorage.fetchAndStoreFriends(token);
+      
+      // Dispatch event to trigger WebSocket connection
+      window.dispatchEvent(new CustomEvent('user-logged-in'));
       
       navigate('/');
     } catch (err) {

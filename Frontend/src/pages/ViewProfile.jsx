@@ -90,6 +90,8 @@ const ViewProfile = () => {
         // Clear localStorage and redirect after a short delay
         setTimeout(() => {
           localStorage.clear();
+          // Dispatch logout event to close WebSocket connection
+          window.dispatchEvent(new CustomEvent('user-logged-out'));
           navigate('/login');
         }, 2000);
       } else {
