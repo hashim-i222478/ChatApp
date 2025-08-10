@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaArrowLeft, FaUserPlus, FaTrash, FaTimes, FaRegCheckSquare } from 'react-icons/fa';
+import { FaArrowLeft, FaUserPlus, FaTrash, FaTimes, FaRegCheckSquare, FaCheckSquare, FaRegSquare } from 'react-icons/fa';
 
 const ChatHeader = ({ 
   displayName, 
@@ -10,10 +10,13 @@ const ChatHeader = ({
   isFriend, 
   selectedMessages, 
   selectionMode, 
+  messages,
   onBack, 
   onAddFriend, 
   onDeleteSelected, 
-  onToggleSelectionMode 
+  onToggleSelectionMode,
+  onSelectAll,
+  onClearSelection
 }) => {
   return (
     <div className="chat-header">
@@ -64,12 +67,35 @@ const ChatHeader = ({
             <span className="button-text">Add Friend</span>
           </button>
         )}
-        {selectedMessages.length > 0 && (
+        {selectionMode && messages && messages.length > 0 && (
+          <>
+          {selectedMessages.length > 0 && (
           <button className="delete-selected-btn" title="Delete selected messages" onClick={onDeleteSelected}>
             <FaTrash />
             <span className="button-text">{selectedMessages.length}</span>
           </button>
         )}
+            <button 
+              className="select-all-btn" 
+              onClick={onSelectAll}
+              disabled={selectedMessages.length === messages.length}
+              title={selectedMessages.length === messages.length ? "All messages selected" : "Select all messages"}
+            >
+              <FaCheckSquare />
+              <span className="button-text">Select All</span>
+            </button>
+            <button 
+              className="clear-selection-btn" 
+              onClick={onClearSelection}
+              disabled={selectedMessages.length === 0}
+              title={selectedMessages.length === 0 ? "No messages selected" : "Clear selection"}
+            >
+              <FaRegSquare />
+              <span className="button-text">Clear All</span>
+            </button>
+          </>
+        )}
+        
         <button 
           className={`select-messages-btn ${selectionMode ? 'active' : ''}`} 
           onClick={onToggleSelectionMode}

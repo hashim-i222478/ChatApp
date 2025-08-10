@@ -374,18 +374,34 @@ const PrivateChat = () => {
       filename = selectedFile.name;
       fileType = selectedFile.type;
       if (isUserOnline) {
-        // For demo: send as base64 (for small files)
+        // For online users: send as base64 (for small files)
         fileData = await fileToBase64(selectedFile);
       } else {
-        // Placeholder: upload to backend (to be implemented in backend step)
-        // Here, just simulate upload and set fileUrl to filename
-        // In real code, use FormData and axios/fetch to upload
-        // Example:
-        // const formData = new FormData();
-        // formData.append('file', selectedFile);
-        // const res = await axios.post('http://localhost:8080/api/chats/private-messages/upload', formData, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-        // fileUrl = res.data.url;
-        fileUrl = filename; // Placeholder
+        // For offline users: upload to backend and get real URL
+        try {
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          const res = await fetch('http://localhost:8080/api/chats/private-messages/upload', {
+            method: 'POST',
+            headers: { 
+              Authorization: `Bearer ${localStorage.getItem('token')}` 
+            },
+            body: formData
+          });
+          
+          if (res.ok) {
+            const uploadResponse = await res.json();
+            fileUrl = uploadResponse.url; // Real URL like "/uploads/private-media/123456-image.jpg"
+          } else {
+            console.error('File upload failed:', res.statusText);
+            // Fallback to filename if upload fails
+            fileUrl = filename;
+          }
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          // Fallback to filename if upload fails
+          fileUrl = filename;
+        }
       }
     }
 
@@ -437,6 +453,17 @@ const PrivateChat = () => {
   const handleToggleSelectionMode = () => {
     setSelectionMode((prev) => !prev);
     setSelectedMessages([]); // clear selection when toggling
+  };
+
+  // Handler for selecting all messages
+  const handleSelectAllMessages = () => {
+    const allTimes = messages.map(m => m.time);
+    setSelectedMessages(allTimes);
+  };
+
+  // Handler for clearing all selections
+  const handleClearAllSelections = () => {
+    setSelectedMessages([]);
   };
 
   // Handler for selecting/unselecting a message by timestamp
@@ -626,10 +653,13 @@ const PrivateChat = () => {
           isFriend={isFriend}
           selectedMessages={selectedMessages}
           selectionMode={selectionMode}
+          messages={messages}
           onBack={() => navigate(-1)}
           onAddFriend={handleAddFriend}
           onDeleteSelected={() => setShowDeleteModal(true)}
           onToggleSelectionMode={handleToggleSelectionMode}
+          onSelectAll={handleSelectAllMessages}
+          onClearSelection={handleClearAllSelections}
         />
         
         <DeleteModal
